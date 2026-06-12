@@ -133,6 +133,11 @@
           Use this page with a local static server. The SDK is loaded from <code>../dist/index.mjs</code>.
           For OAuth flows, use your real Zoho credentials and redirect URI.
         </p>
+        <p>
+          If you select <code>IN_SANDBOX</code>, the SDK automatically converts scopes from
+          <code>ZohoPay.*</code> to <code>ZohoPaySandbox.*</code> and uses sandbox
+          <code>soid</code> format: <code>zohopaysandbox.{account_id}</code>.
+        </p>
       </div>
 
       <div class="grid">
@@ -194,7 +199,7 @@
               <button id="refreshAccessToken" class="success">Refresh token</button>
               <button id="revokeRefreshToken" class="danger">Revoke token</button>
             </div>
-            <div class="hint">Auth URL uses payments/customer/refund scopes by default. Paste the full redirect URL to parse and exchange the auth code.</div>
+            <div class="hint">Auth URL uses payments/customer/refund scopes by default. For <code>IN_SANDBOX</code>, scope prefixes are rewritten automatically and <code>soid</code> becomes <code>zohopaysandbox.{account_id}</code>. Paste the full redirect URL to parse and exchange the auth code.</div>
           </div>
         </section>
 
