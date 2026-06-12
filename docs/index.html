@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZohoPay SDK Docs</title>
+    <title>zohopay — TypeScript SDK Docs</title>
     <style>
       :root {
         color-scheme: dark;
@@ -13,191 +13,375 @@
         --muted: #a2afcc;
         --accent: #7c9cff;
         --border: rgba(255,255,255,0.08);
+        --tag-bg: rgba(124,156,255,.12);
+        --tag-border: rgba(124,156,255,.22);
       }
       * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-      .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
-      .hero, .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; }
-      .hero { padding: 28px; margin-bottom: 20px; }
-      .card { padding: 22px; margin-top: 16px; }
-      h1, h2, h3 { margin: 0 0 12px; }
-      p, li { color: var(--muted); line-height: 1.65; }
-      code, pre {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      }
-      code { color: #d8e4ff; }
+      body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      .wrap { max-width: 1060px; margin: 0 auto; padding: 36px 20px 100px; }
+      .hero { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 32px; margin-bottom: 24px; }
+      .hero h1 { margin: 10px 0 8px; font-size: 2rem; }
+      .hero p { color: var(--muted); margin: 0; max-width: 640px; line-height: 1.7; }
+      .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      .tag { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--tag-bg); color: #bfd0ff; border: 1px solid var(--tag-border); font-size: 12px; }
+      .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+      .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+      .card h2 { margin: 0 0 14px; font-size: 1.15rem; }
+      .card h3 { margin: 20px 0 8px; font-size: 0.95rem; color: var(--accent); }
+      p, li { color: var(--muted); line-height: 1.7; }
+      ul { padding-left: 18px; margin: 6px 0; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #d8e4ff; font-size: 0.88em; }
       pre {
-        margin: 12px 0 0;
-        padding: 16px;
-        overflow: auto;
-        border-radius: 14px;
-        background: #08101e;
+        margin: 10px 0 0;
+        padding: 16px 18px;
+        overflow-x: auto;
+        border-radius: 12px;
+        background: #07101e;
         color: #dbe8ff;
         border: 1px solid var(--border);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.84rem;
+        line-height: 1.6;
       }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-      .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(124,156,255,.12); color: #bfd0ff; border: 1px solid rgba(124,156,255,.2); font-size: 12px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+      th { color: var(--accent); font-weight: 600; }
+      td { color: var(--muted); }
+      td code { color: #d8e4ff; }
       a { color: #9ec2ff; }
-      ul { padding-left: 18px; }
+      .note { background: rgba(124,156,255,.07); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 12px; color: var(--muted); font-size: 0.88rem; }
     </style>
   </head>
   <body>
     <div class="wrap">
+
+      <!-- Hero -->
       <section class="hero">
-        <span class="pill">zohopay TypeScript SDK</span>
-        <h1>Docs</h1>
+        <div class="tags">
+          <span class="tag">TypeScript</span>
+          <span class="tag">Zoho Payments</span>
+          <span class="tag">Node ≥ 18</span>
+          <span class="tag">Apache-2.0</span>
+        </div>
+        <h1>zohopay SDK</h1>
         <p>
-          Large-scale, extensible Zoho Payments SDK focused on authentication,
-          payment tokens, and payment verification.
+          Typed TypeScript SDK for the Zoho Payments API. Covers OAuth 2.0, payment links,
+          payment sessions, payments, customers, and refunds across India and US editions.
+          Zero runtime dependencies — uses native <code>fetch</code>.
         </p>
       </section>
 
-      <section class="grid">
+      <!-- Overview grid -->
+      <div class="grid2">
         <article class="card">
-          <h2>What is included</h2>
+          <h2>What's included</h2>
           <ul>
-            <li>OAuth URL generation</li>
-            <li>Authorization-code token exchange</li>
-            <li>Refresh-token access token generation</li>
-            <li>Payment links</li>
-            <li>Payment sessions / tokens</li>
-            <li>Payment verification</li>
-            <li>Customers and refunds</li>
+            <li>OAuth 2.0 — auth URL, code exchange, token refresh, revoke</li>
+            <li>Payment Links — create, update, cancel, list, get</li>
+            <li>Payment Sessions — create, get</li>
+            <li>Payments — create (US), get, list, verify</li>
+            <li>Customers — create, get, list (US), delete (US)</li>
+            <li>Refunds — create, get, list</li>
             <li>Pluggable HTTP transport</li>
+            <li>Typed exception hierarchy</li>
           </ul>
         </article>
-
         <article class="card">
-          <h2>Files</h2>
+          <h2>Source layout</h2>
           <ul>
-            <li><code>src/auth</code> — OAuth helpers and token lifecycle</li>
-            <li><code>src/net</code> — transport and authenticated client</li>
-            <li><code>src/services</code> — API resources</li>
-            <li><code>src/models</code> — response models</li>
-            <li><code>src/params</code> — request serializers + validation</li>
-            <li><code>examples/playground.html</code> — browser test page</li>
+            <li><code>src/auth/</code> — OAuth helpers &amp; token lifecycle</li>
+            <li><code>src/net/</code> — transport &amp; authenticated HTTP client</li>
+            <li><code>src/services/</code> — API resource services</li>
+            <li><code>src/models/</code> — response model types</li>
+            <li><code>src/params/</code> — request serializers &amp; validators</li>
+            <li><code>src/exceptions.ts</code> — exception hierarchy</li>
+            <li><code>examples/server.ts</code> — local dev proxy server</li>
           </ul>
         </article>
-      </section>
+      </div>
 
+      <!-- Install -->
       <section class="card">
-        <h2>Install</h2>
+        <h2>Install &amp; build</h2>
         <pre>bun install
-bun run build</pre>
+bun run build       # outputs CJS + ESM + .d.ts to dist/</pre>
       </section>
 
+      <!-- Editions -->
+      <section class="card">
+        <h2>Editions</h2>
+        <table>
+          <thead><tr><th>Constant</th><th>Region</th><th>API host</th></tr></thead>
+          <tbody>
+            <tr><td><code>Edition.IN</code></td><td>India — production</td><td>payments.zoho.in</td></tr>
+            <tr><td><code>Edition.IN_SANDBOX</code></td><td>India — sandbox</td><td>paymentssandbox.zoho.in</td></tr>
+            <tr><td><code>Edition.US</code></td><td>United States</td><td>payments.zoho.com</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Create client -->
       <section class="card">
         <h2>Create a client</h2>
-        <pre>import { ZohoPayments, Edition } from "./dist/index.mjs";
+        <pre>import { ZohoPayments, Edition } from "zohopay";
 
 const client = ZohoPayments.builder()
-  .accountId("23137556")
-  .edition(Edition.IN)
+  .accountId("YOUR_ACCOUNT_ID")
+  .edition(Edition.IN)           // Edition.IN | Edition.IN_SANDBOX | Edition.US
   .accessToken("1000.xxxx.yyyy")
+  .requestTimeoutMs(45_000)      // optional — default 60 s
   .build();</pre>
+        <div class="note">The builder is single-use. Calling <code>build()</code> twice throws. Use <code>client.close()</code> or <code>await using client = …</code> to release resources.</div>
       </section>
 
+      <!-- OAuth -->
       <section class="card">
-        <h2>Authentication flow</h2>
-        <h3>1. Build auth URL</h3>
-        <pre>import { buildAuthorizationUrl, Edition, OAUTH_SCOPES } from "./dist/index.mjs";
+        <h2>OAuth 2.0 flow</h2>
 
-const url = buildAuthorizationUrl({
-  clientId: "1000.YOUR_CLIENT_ID",
-  accountId: "23137556",
+        <h3>1 — Build the authorization URL</h3>
+        <pre>import { buildAuthorizationUrl, Edition, OAUTH_SCOPES } from "zohopay";
+
+const authUrl = buildAuthorizationUrl({
+  clientId:    "1000.YOUR_CLIENT_ID",
+  accountId:   "YOUR_ACCOUNT_ID",
+  redirectUri: "https://yourapp.example.com/oauth/callback",
+  edition:     Edition.IN,
+  accessType:  "offline",   // "offline" to receive a refresh token
+  state:       "csrf-token-here",  // validate on callback to prevent CSRF
   scopes: [
-    OAUTH_SCOPES.PAYMENTS_CREATE,
+    OAUTH_SCOPES.PAYMENT_LINKS_CREATE,
+    OAUTH_SCOPES.PAYMENT_LINKS_READ,
     OAUTH_SCOPES.PAYMENTS_READ,
+    OAUTH_SCOPES.CUSTOMERS_CREATE,
     OAUTH_SCOPES.REFUNDS_CREATE,
     OAUTH_SCOPES.REFUNDS_READ,
   ],
-  redirectUri: "https://yourapp.example.com/oauth/callback",
-  edition: Edition.IN,
-  accessType: "offline",
-});</pre>
+});
+// Redirect the user to authUrl</pre>
 
-        <h3>2. Refresh access token</h3>
-        <pre>const fresh = await ZohoPayments.generateAccessToken({
-  refreshToken: "1000.refresh_token",
-  clientId: "1000.YOUR_CLIENT_ID",
-  clientSecret: "your_client_secret",
-  redirectUri: "https://yourapp.example.com/oauth/callback",
-  edition: Edition.IN,
+        <h3>2 — Parse callback &amp; exchange code</h3>
+        <pre>import { parseOAuthCallback, exchangeCodeForToken } from "zohopay";
+
+const callback = parseOAuthCallback(req.url);
+// Validate callback.state against your stored CSRF token here
+
+const tokenSet = await exchangeCodeForToken({
+  code:         callback.code!,
+  clientId:     "1000.YOUR_CLIENT_ID",
+  clientSecret: "YOUR_CLIENT_SECRET",
+  redirectUri:  "https://yourapp.example.com/oauth/callback",
+  edition:      Edition.IN,
+});
+// tokenSet.accessToken  — use immediately
+// tokenSet.refreshToken — store securely
+// tokenSet.expiresIn    — seconds until expiry</pre>
+
+        <h3>3 — Refresh the access token</h3>
+        <pre>// The SDK does NOT auto-refresh. Call this when the token expires.
+const fresh = await ZohoPayments.generateAccessToken({
+  refreshToken: "1000.stored_refresh_token",
+  clientId:     "1000.YOUR_CLIENT_ID",
+  clientSecret: "YOUR_CLIENT_SECRET",
+  redirectUri:  "https://yourapp.example.com/oauth/callback",
+  edition:      Edition.IN,
 });
 
-client.updateOAuthToken(fresh);</pre>
+client.updateOAuthToken(fresh);  // no rebuild needed
+// fresh.isExpired() — true if expired (with 30 s buffer)</pre>
 
-        <h3>3. Parse callback and exchange auth code</h3>
-        <pre>const callback = ZohoPayments.parseOAuthCallback(
-  "https://yourapp.example.com/oauth/callback?code=1000.xxx&state=my-state"
-);
+        <h3>4 — Revoke a refresh token</h3>
+        <pre>await ZohoPayments.revokeToken({
+  token:   "1000.stored_refresh_token",
+  edition: Edition.IN,
+});</pre>
+      </section>
 
-if (!callback.code) {
-  throw new Error("Missing authorization code");
+      <!-- Payment Links -->
+      <section class="card">
+        <h2>Payment Links</h2>
+        <pre>// Create
+const link = await client.paymentLinks().create({
+  amount:      500,
+  currency:    "INR",
+  description: "Order #1234",
+  email:       "customer@example.com",
+  notifyCustomer: { email: true, sms: false },
+  metaData:    [{ key: "order_id", value: "ORD-1234" }],
+});
+console.log(link.paymentLinkId, link.url);
+
+// Get
+const link = await client.paymentLinks().get("link_id");
+
+// Update
+const updated = await client.paymentLinks().update("link_id", { amount: 600 });
+
+// Cancel
+const cancelled = await client.paymentLinks().cancel("link_id");
+
+// List
+const { items, pageContext } = await client.paymentLinks().list({ page: 1, perPage: 20 });</pre>
+      </section>
+
+      <!-- Payment Sessions -->
+      <section class="card">
+        <h2>Payment Sessions</h2>
+        <pre>// Create
+const session = await client.paymentSessions().create({
+  amount:        250,
+  currency:      "INR",
+  description:   "Checkout session",
+  expiresIn:     600,   // 300–900 seconds
+  maxRetryCount: 3,     // 1–5
+});
+console.log(session.paymentsSessionId, session.accessKey);
+
+// Get
+const session = await client.paymentSessions().get("session_id");</pre>
+      </section>
+
+      <!-- Payments -->
+      <section class="card">
+        <h2>Payments</h2>
+        <pre>// Verify / get
+const payment = await client.payments().verify("payment_id");
+console.log(payment.status, payment.amount, payment.currency);
+
+// List
+const { items } = await client.payments().list({
+  status:   "success",
+  fromDate: "2026-01-01",
+  toDate:   "2026-06-30",
+  page:     1,
+});
+
+// Create (Edition.US only)
+const payment = await client.payments().create({
+  customerId:      "cust_id",
+  paymentMethodId: "pm_id",
+  amount:          1000,
+  currency:        "USD",
+});</pre>
+      </section>
+
+      <!-- Customers -->
+      <section class="card">
+        <h2>Customers</h2>
+        <pre>// Create
+const customer = await client.customers().create({
+  name:     "Jane Doe",
+  email:    "jane@example.com",
+  metaData: [{ key: "source", value: "web" }],
+});
+
+// Get
+const customer = await client.customers().get("cust_id");
+
+// List (Edition.US only)
+const { items } = await client.customers().list({ email: "jane@example.com" });
+
+// Delete (Edition.US only)
+await client.customers().delete("cust_id");</pre>
+      </section>
+
+      <!-- Refunds -->
+      <section class="card">
+        <h2>Refunds</h2>
+        <pre>// Create
+const refund = await client.refunds().create("payment_id", {
+  amount: 100,
+  reason: "requested_by_customer",
+  type:   "partial",   // "partial" | "full"
+});
+
+// Get
+const refund = await client.refunds().get("refund_id");
+
+// List
+const { items } = await client.refunds().list({ page: 1, perPage: 20 });</pre>
+      </section>
+
+      <!-- Error handling -->
+      <section class="card">
+        <h2>Error handling</h2>
+        <pre>import {
+  AuthenticationException,   // 401
+  PermissionException,        // 403
+  ResourceNotFoundException,  // 404
+  InvalidRequestException,    // 400 / 422
+  RateLimitException,         // 429
+  ZohoPaymentsAPIException,   // any other non-2xx
+  ConnectionException,        // network / timeout
+} from "zohopay";
+
+try {
+  await client.payments().get("id");
+} catch (err) {
+  if (err instanceof AuthenticationException) {
+    // Refresh the token and retry
+  } else if (err instanceof RateLimitException) {
+    // Back off and retry
+  } else if (err instanceof InvalidRequestException) {
+    console.error(err.codeString, err.apiErrorMessage);
+  } else if (err instanceof ZohoPaymentsAPIException) {
+    console.error(err.httpStatusCode, err.message, err.rawBody);
+  } else if (err instanceof ConnectionException) {
+    // Network error or request timeout
+  }
+}</pre>
+      </section>
+
+      <!-- Custom transport -->
+      <section class="card">
+        <h2>Custom HTTP transport</h2>
+        <p>Implement <code>HttpTransport</code> to add retries, proxies, or logging.</p>
+        <pre>import { DefaultHttpTransport, ZohoPayments, Edition } from "zohopay";
+import type { HttpTransport, ZohoRequest, ZohoResponse } from "zohopay";
+
+class LoggingTransport implements HttpTransport {
+  constructor(private readonly inner: HttpTransport) {}
+
+  async execute(req: ZohoRequest): Promise&lt;ZohoResponse&gt; {
+    console.log(`→ ${req.method} ${req.url}`);
+    const res = await this.inner.execute(req);
+    console.log(`← ${res.statusCode}`);
+    return res;
+  }
 }
 
-const tokenSet = await ZohoPayments.exchangeCodeForToken({
-  code: callback.code,
-  clientId: "1000.YOUR_CLIENT_ID",
-  clientSecret: "your_client_secret",
-  redirectUri: "https://yourapp.example.com/oauth/callback",
-  edition: Edition.IN,
-});
-
-console.log(tokenSet.accessToken, tokenSet.refreshToken);</pre>
-
-        <h3>4. Revoke refresh token</h3>
-        <pre>await ZohoPayments.revokeToken({
-  token: "1000.refresh_token",
-  edition: Edition.IN,
-});</pre>
+const client = ZohoPayments.builder()
+  .accountId("YOUR_ACCOUNT_ID")
+  .edition(Edition.IN)
+  .accessToken("1000.xxxx.yyyy")
+  .transport(new LoggingTransport(new DefaultHttpTransport()))
+  .build();</pre>
+        <div class="note"><code>transport()</code> and <code>requestTimeoutMs()</code> are mutually exclusive — passing both throws at build time.</div>
       </section>
 
+      <!-- Dev server -->
       <section class="card">
-        <h2>Payment token / session</h2>
-        <pre>const session = await client.paymentSessions().create({
-  amount: 250,
-  currency: "INR",
-  description: "Checkout session",
-  expiresIn: 600,
-});
-
-console.log(session.paymentsSessionId, session.accessKey);</pre>
+        <h2>Dev proxy server</h2>
+        <p>A local Express server proxies all Zoho API calls server-side, avoiding CORS issues during development.</p>
+        <pre>bun run playground   # starts on http://127.0.0.1:3579
+# Set PORT env var to override the port</pre>
+        <div class="note">The server binds to <code>127.0.0.1</code> only and is not accessible on the LAN.</div>
       </section>
 
+      <!-- Scripts -->
       <section class="card">
-        <h2>Payment verification</h2>
-        <pre>const payment = await client.payments().verify("payment_id_here");
-console.log(payment.status, payment.amount, payment.currency);</pre>
+        <h2>Scripts</h2>
+        <table>
+          <thead><tr><th>Command</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>bun run build</code></td><td>Compile to <code>dist/</code> (CJS + ESM + types)</td></tr>
+            <tr><td><code>bun run dev</code></td><td>Watch mode</td></tr>
+            <tr><td><code>bun run typecheck</code></td><td>Type-check without emitting</td></tr>
+            <tr><td><code>bun run test</code></td><td>Run tests with Vitest</td></tr>
+            <tr><td><code>bun run playground</code></td><td>Start the dev proxy server</td></tr>
+          </tbody>
+        </table>
       </section>
 
-      <section class="card">
-        <h2>Payment link</h2>
-        <pre>const link = await client.paymentLinks().create({
-  amount: 500,
-  currency: "INR",
-  description: "Order #1234",
-  email: "customer@example.com",
-});
-
-console.log(link.paymentLinkId, link.url);</pre>
-      </section>
-
-      <section class="card">
-        <h2>Testing locally</h2>
-        <p>
-          Open <code>examples/playground.html</code> through a local static server,
-          not directly as a <code>file://</code> URL.
-        </p>
-        <pre>bunx serve .
-# then open /examples/playground.html
-# docs page: /docs/index.html</pre>
-      </section>
     </div>
   </body>
 </html>
