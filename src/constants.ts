@@ -7,6 +7,11 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
 export const OAUTH_SCOPES = {
   CUSTOMERS_CREATE: "ZohoPay.customers.CREATE",
   CUSTOMERS_READ: "ZohoPay.customers.READ",
+  PAYMENT_LINKS_CREATE: "ZohoPay.paymentlinks.CREATE",
+  PAYMENT_LINKS_READ: "ZohoPay.paymentlinks.READ",
+  PAYMENT_LINKS_UPDATE: "ZohoPay.paymentlinks.UPDATE",
+  PAYMENT_SESSIONS_CREATE: "ZohoPay.paymentsessions.CREATE",
+  PAYMENT_SESSIONS_READ: "ZohoPay.paymentsessions.READ",
   PAYMENTS_CREATE: "ZohoPay.payments.CREATE",
   PAYMENTS_READ: "ZohoPay.payments.READ",
   PAYMENTS_UPDATE: "ZohoPay.payments.UPDATE",
