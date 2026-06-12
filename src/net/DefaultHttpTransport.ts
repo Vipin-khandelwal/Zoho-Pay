@@ -3,7 +3,6 @@ import { ConnectionException } from "../exceptions.js";
 import { DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS } from "../constants.js";
 
 export interface DefaultHttpTransportOptions {
-  connectTimeoutMs?: number;
   requestTimeoutMs?: number;
 }
 

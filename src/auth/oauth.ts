@@ -108,15 +108,17 @@ async function exchangeCodeForTokenInternal(
 
   const data = await _postForm(url, body);
 
+  if (data.error && !data.access_token) {
+    throw new ZohoPaymentsException(`Token exchange failed: ${String(data.error)}`);
+  }
+
   if (!data.access_token) {
-    throw new ZohoPaymentsException(
-      `Token exchange failed: ${JSON.stringify(data)}`
-    );
+    throw new ZohoPaymentsException("Token exchange failed: no access_token in response");
   }
 
   return {
     accessToken: data.access_token as string,
-    refreshToken: data.refresh_token as string,
+    refreshToken: typeof data.refresh_token === "string" ? data.refresh_token : undefined,
     expiresIn: Number(data.expires_in ?? data.expires_in_sec ?? 3600),
   };
 }
@@ -160,13 +162,11 @@ export async function generateAccessToken(
   const data = await _postForm(url, body);
 
   if (data.error && !data.access_token) {
-    throw new ZohoPaymentsException(`Token refresh failed: ${data.error}`);
+    throw new ZohoPaymentsException(`Token refresh failed: ${String(data.error)}`);
   }
 
   if (!data.access_token) {
-    throw new ZohoPaymentsException(
-      `Token refresh response missing access_token: ${JSON.stringify(data)}`
-    );
+    throw new ZohoPaymentsException("Token refresh failed: no access_token in response");
   }
 
   const expiresIn = Number(data.expires_in_sec ?? data.expires_in ?? 3600);
@@ -181,9 +181,9 @@ export async function revokeToken(params: {
   edition: Edition;
 }): Promise<void> {
   const config = getEditionConfig(params.edition);
-  const url = `${config.accountsUrl}/oauth/v2/token/revoke?token=${encodeURIComponent(params.token)}`;
-
-  await _postForm(url, new URLSearchParams());
+  const url = `${config.accountsUrl}/oauth/v2/token/revoke`;
+  const body = new URLSearchParams({ token: params.token });
+  await _postForm(url, body);
 }
 
 async function _postForm(

@@ -100,6 +100,11 @@ export class ZohoPaymentsClientBuilder {
   }
 
   addDefaultHeader(name: string, value: string): this {
+    const lower = name.toLowerCase();
+    const reserved = new Set(["authorization", "user-agent", "accept", "content-type", "content-length", "host"]);
+    if (reserved.has(lower)) {
+      throw new Error(`Header "${name}" is managed by the SDK and cannot be overridden`);
+    }
     this._defaultHeaders[name] = value;
     return this;
   }

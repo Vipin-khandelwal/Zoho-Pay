@@ -37,11 +37,8 @@ const app = express();
 app.use(express.json());
 
 // ── Static files ──────────────────────────────────────────────────────────────
-// Serve playground.html at / and dist/ for the SDK bundle
+// Serve dist/ for the SDK bundle
 app.use("/dist", express.static(path.join(__dirname, "../dist")));
-app.get("/", (_req, res) => {
-  res.sendFile(path.join(__dirname, "playground.html"));
-});
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function parseEdition(raw: unknown): Edition {
@@ -276,12 +273,15 @@ app.get("/api/customers", withClient(fromQuery, async (client, _req, res) => {
 
 // Refunds
 app.post("/api/refunds", withClient(fromBody, async (client, req, res) => {
-  const { paymentId, amount, reason } = req.body as Record<string, unknown>;
+  const { paymentId, amount, reason, type } = req.body as Record<string, unknown>;
   if (!paymentId) { res.status(400).json({ error: "paymentId is required" }); return; }
+  if (!amount) { res.status(400).json({ error: "amount is required" }); return; }
+  if (!reason) { res.status(400).json({ error: "reason is required" }); return; }
+  const refundType = type === "full" ? "full" : "partial";
   res.json(await client.refunds().create(String(paymentId), {
     amount: Number(amount),
     reason: String(reason),
-    type: "partial",
+    type: refundType,
   }));
 }));
 
@@ -300,7 +300,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, "127.0.0.1", () => {
   console.log(`\n  Zoho Payments Playground`);
   console.log(`  ─────────────────────────────────────────`);
   console.log(`  Local:   http://localhost:${PORT}`);

@@ -108,6 +108,7 @@ export class ZohoHttpClient {
 
   private _buildHeaders(hasBody: boolean): Record<string, string> {
     const token = this._tokenManager.getAccessToken();
+    // SDK-managed headers are placed last so they always win over user defaults
     const headers: Record<string, string> = {
       ...this._defaultHeaders,
       Authorization: `Zoho-oauthtoken ${token}`,

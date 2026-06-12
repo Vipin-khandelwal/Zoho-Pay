@@ -8,7 +8,7 @@ export function optStr(data: Record<string, unknown>, key: string): string | und
 export function optNum(data: Record<string, unknown>, key: string): number | undefined {
   const v = data[key];
   if (typeof v === "number") return v;
-  if (typeof v === "string") {
+  if (typeof v === "string" && v.trim() !== "") {
     const n = Number(v);
     return isNaN(n) ? undefined : n;
   }

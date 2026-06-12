@@ -9,7 +9,7 @@ import { PaymentSessionService } from "./services/PaymentSessionService.js";
 import { PaymentService } from "./services/PaymentService.js";
 import { CustomerService } from "./services/CustomerService.js";
 import { RefundService } from "./services/RefundService.js";
-import { DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS } from "./constants.js";
+import { DEFAULT_REQUEST_TIMEOUT_MS } from "./constants.js";
 
 export interface ZohoPaymentsClientOptions {
   accountId: string;
@@ -60,7 +60,6 @@ export class ZohoPaymentsClient {
     const transport: HttpTransport =
       options.transport ??
       new DefaultHttpTransport({
-        connectTimeoutMs: options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS,
         requestTimeoutMs: options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
       });
 
