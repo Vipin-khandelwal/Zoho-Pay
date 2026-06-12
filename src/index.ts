@@ -18,11 +18,16 @@ export {
   buildAuthorizationUrl,
   exchangeCodeForToken,
   generateAccessToken,
+  parseOAuthCallback,
   revokeToken,
 } from "./auth/index.js";
 export type {
+  ExchangeCodeForTokenParams,
+  ExchangeCodeForTokenResult,
   GenerateAccessTokenParams,
   GenerateAuthorizationUrlParams,
+  ParseOAuthCallbackResult,
+  RevokeTokenParams,
 } from "./auth/index.js";
 
 // ── Exceptions ────────────────────────────────────────────────────────────────

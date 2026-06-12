@@ -10,6 +10,20 @@ export interface GenerateAccessTokenParams {
   edition: Edition;
 }
 
+export interface ExchangeCodeForTokenParams {
+  code: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  edition: Edition;
+}
+
+export interface ExchangeCodeForTokenResult {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
 export interface GenerateAuthorizationUrlParams {
   clientId: string;
   accountId: string;
@@ -18,6 +32,18 @@ export interface GenerateAuthorizationUrlParams {
   edition: Edition;
   accessType?: "online" | "offline";
   state?: string;
+}
+
+export interface ParseOAuthCallbackResult {
+  code: string | undefined;
+  state: string | undefined;
+  location: string | undefined;
+  accountsServer: string | undefined;
+}
+
+export interface RevokeTokenParams {
+  token: string;
+  edition: Edition;
 }
 
 /**
@@ -35,8 +61,12 @@ export function buildAuthorizationUrl(
     ? `zohopaysandbox.${accountId}`
     : `zohopay.${accountId}`;
 
+  const normalizedScopes = isSandbox
+    ? scopes.map((scope) => scope.replace(/^ZohoPay\./, "ZohoPaySandbox."))
+    : scopes;
+
   const query = new URLSearchParams({
-    scope: scopes.join(","),
+    scope: normalizedScopes.join(","),
     client_id: clientId,
     soid,
     response_type: "code",
@@ -61,6 +91,12 @@ export async function exchangeCodeForToken(params: {
   redirectUri: string;
   edition: Edition;
 }): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+  return exchangeCodeForTokenInternal(params);
+}
+
+async function exchangeCodeForTokenInternal(
+  params: ExchangeCodeForTokenParams
+): Promise<ExchangeCodeForTokenResult> {
   const { code, clientId, clientSecret, redirectUri, edition } = params;
   const config = getEditionConfig(edition);
   const url = `${config.accountsUrl}/oauth/v2/token`;
@@ -85,6 +121,18 @@ export async function exchangeCodeForToken(params: {
     accessToken: data.access_token as string,
     refreshToken: data.refresh_token as string,
     expiresIn: Number(data.expires_in ?? data.expires_in_sec ?? 3600),
+  };
+}
+
+export function parseOAuthCallback(
+  callbackUrl: string
+): ParseOAuthCallbackResult {
+  const url = new URL(callbackUrl);
+  return {
+    code: url.searchParams.get("code") ?? undefined,
+    state: url.searchParams.get("state") ?? undefined,
+    location: url.searchParams.get("location") ?? undefined,
+    accountsServer: url.searchParams.get("accounts-server") ?? undefined,
   };
 }
 

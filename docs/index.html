@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZohoPay SDK Docs</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0f1d;
+        --card: #121a2c;
+        --text: #edf2ff;
+        --muted: #a2afcc;
+        --accent: #7c9cff;
+        --border: rgba(255,255,255,0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+      .hero, .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; }
+      .hero { padding: 28px; margin-bottom: 20px; }
+      .card { padding: 22px; margin-top: 16px; }
+      h1, h2, h3 { margin: 0 0 12px; }
+      p, li { color: var(--muted); line-height: 1.65; }
+      code, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      code { color: #d8e4ff; }
+      pre {
+        margin: 12px 0 0;
+        padding: 16px;
+        overflow: auto;
+        border-radius: 14px;
+        background: #08101e;
+        color: #dbe8ff;
+        border: 1px solid var(--border);
+      }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+      .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(124,156,255,.12); color: #bfd0ff; border: 1px solid rgba(124,156,255,.2); font-size: 12px; }
+      a { color: #9ec2ff; }
+      ul { padding-left: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="hero">
+        <span class="pill">zohopay TypeScript SDK</span>
+        <h1>Docs</h1>
+        <p>
+          Large-scale, extensible Zoho Payments SDK focused on authentication,
+          payment tokens, and payment verification.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>What is included</h2>
+          <ul>
+            <li>OAuth URL generation</li>
+            <li>Authorization-code token exchange</li>
+            <li>Refresh-token access token generation</li>
+            <li>Payment links</li>
+            <li>Payment sessions / tokens</li>
+            <li>Payment verification</li>
+            <li>Customers and refunds</li>
+            <li>Pluggable HTTP transport</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Files</h2>
+          <ul>
+            <li><code>src/auth</code> — OAuth helpers and token lifecycle</li>
+            <li><code>src/net</code> — transport and authenticated client</li>
+            <li><code>src/services</code> — API resources</li>
+            <li><code>src/models</code> — response models</li>
+            <li><code>src/params</code> — request serializers + validation</li>
+            <li><code>examples/playground.html</code> — browser test page</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Install</h2>
+        <pre>bun install
+bun run build</pre>
+      </section>
+
+      <section class="card">
+        <h2>Create a client</h2>
+        <pre>import { ZohoPayments, Edition } from "./dist/index.mjs";
+
+const client = ZohoPayments.builder()
+  .accountId("23137556")
+  .edition(Edition.IN)
+  .accessToken("1000.xxxx.yyyy")
+  .build();</pre>
+      </section>
+
+      <section class="card">
+        <h2>Authentication flow</h2>
+        <h3>1. Build auth URL</h3>
+        <pre>import { buildAuthorizationUrl, Edition, OAUTH_SCOPES } from "./dist/index.mjs";
+
+const url = buildAuthorizationUrl({
+  clientId: "1000.YOUR_CLIENT_ID",
+  accountId: "23137556",
+  scopes: [
+    OAUTH_SCOPES.PAYMENTS_CREATE,
+    OAUTH_SCOPES.PAYMENTS_READ,
+    OAUTH_SCOPES.REFUNDS_CREATE,
+    OAUTH_SCOPES.REFUNDS_READ,
+  ],
+  redirectUri: "https://yourapp.example.com/oauth/callback",
+  edition: Edition.IN,
+  accessType: "offline",
+});</pre>
+
+        <h3>2. Refresh access token</h3>
+        <pre>const fresh = await ZohoPayments.generateAccessToken({
+  refreshToken: "1000.refresh_token",
+  clientId: "1000.YOUR_CLIENT_ID",
+  clientSecret: "your_client_secret",
+  redirectUri: "https://yourapp.example.com/oauth/callback",
+  edition: Edition.IN,
+});
+
+client.updateOAuthToken(fresh);</pre>
+
+        <h3>3. Parse callback and exchange auth code</h3>
+        <pre>const callback = ZohoPayments.parseOAuthCallback(
+  "https://yourapp.example.com/oauth/callback?code=1000.xxx&state=my-state"
+);
+
+if (!callback.code) {
+  throw new Error("Missing authorization code");
+}
+
+const tokenSet = await ZohoPayments.exchangeCodeForToken({
+  code: callback.code,
+  clientId: "1000.YOUR_CLIENT_ID",
+  clientSecret: "your_client_secret",
+  redirectUri: "https://yourapp.example.com/oauth/callback",
+  edition: Edition.IN,
+});
+
+console.log(tokenSet.accessToken, tokenSet.refreshToken);</pre>
+
+        <h3>4. Revoke refresh token</h3>
+        <pre>await ZohoPayments.revokeToken({
+  token: "1000.refresh_token",
+  edition: Edition.IN,
+});</pre>
+      </section>
+
+      <section class="card">
+        <h2>Payment token / session</h2>
+        <pre>const session = await client.paymentSessions().create({
+  amount: 250,
+  currency: "INR",
+  description: "Checkout session",
+  expiresIn: 600,
+});
+
+console.log(session.paymentsSessionId, session.accessKey);</pre>
+      </section>
+
+      <section class="card">
+        <h2>Payment verification</h2>
+        <pre>const payment = await client.payments().verify("payment_id_here");
+console.log(payment.status, payment.amount, payment.currency);</pre>
+      </section>
+
+      <section class="card">
+        <h2>Payment link</h2>
+        <pre>const link = await client.paymentLinks().create({
+  amount: 500,
+  currency: "INR",
+  description: "Order #1234",
+  email: "customer@example.com",
+});
+
+console.log(link.paymentLinkId, link.url);</pre>
+      </section>
+
+      <section class="card">
+        <h2>Testing locally</h2>
+        <p>
+          Open <code>examples/playground.html</code> through a local static server,
+          not directly as a <code>file://</code> URL.
+        </p>
+        <pre>bunx serve .
+# then open /examples/playground.html
+# docs page: /docs/index.html</pre>
+      </section>
+    </div>
+  </body>
+</html>

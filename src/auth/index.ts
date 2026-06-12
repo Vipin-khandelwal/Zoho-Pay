@@ -4,9 +4,14 @@ export {
   buildAuthorizationUrl,
   exchangeCodeForToken,
   generateAccessToken,
+  parseOAuthCallback,
   revokeToken,
 } from "./oauth.js";
 export type {
+  ExchangeCodeForTokenParams,
+  ExchangeCodeForTokenResult,
   GenerateAccessTokenParams,
   GenerateAuthorizationUrlParams,
+  ParseOAuthCallbackResult,
+  RevokeTokenParams,
 } from "./oauth.js";

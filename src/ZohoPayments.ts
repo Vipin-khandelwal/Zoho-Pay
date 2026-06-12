@@ -1,6 +1,16 @@
 import { Edition } from "./edition.js";
 import { OAuthToken } from "./auth/OAuthToken.js";
-import { generateAccessToken, type GenerateAccessTokenParams } from "./auth/oauth.js";
+import {
+  exchangeCodeForToken,
+  generateAccessToken,
+  parseOAuthCallback,
+  revokeToken,
+  type ExchangeCodeForTokenParams,
+  type ExchangeCodeForTokenResult,
+  type GenerateAccessTokenParams,
+  type ParseOAuthCallbackResult,
+  type RevokeTokenParams,
+} from "./auth/oauth.js";
 import { ZohoPaymentsClient, type ZohoPaymentsClientOptions } from "./ZohoPaymentsClient.js";
 import type { HttpTransport } from "./net/types.js";
 
@@ -32,6 +42,20 @@ export class ZohoPayments {
     params: GenerateAccessTokenParams
   ): Promise<OAuthToken> {
     return generateAccessToken(params);
+  }
+
+  static async exchangeCodeForToken(
+    params: ExchangeCodeForTokenParams
+  ): Promise<ExchangeCodeForTokenResult> {
+    return exchangeCodeForToken(params);
+  }
+
+  static parseOAuthCallback(callbackUrl: string): ParseOAuthCallbackResult {
+    return parseOAuthCallback(callbackUrl);
+  }
+
+  static async revokeToken(params: RevokeTokenParams): Promise<void> {
+    return revokeToken(params);
   }
 }
 

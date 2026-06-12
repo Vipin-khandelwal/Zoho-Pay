@@ -10,7 +10,9 @@ import {
   InvalidRequestException,
   ZohoPaymentsAPIException,
   buildAuthorizationUrl,
+  exchangeCodeForToken,
   OAUTH_SCOPES,
+  parseOAuthCallback,
 } from "../src/index.js";
 
 // ── 1. Build the client ───────────────────────────────────────────────────────
@@ -42,7 +44,31 @@ const authUrl = buildAuthorizationUrl({
 });
 console.log("Authorization URL:", authUrl);
 
-// ── 3. Refresh an access token ────────────────────────────────────────────────
+// ── 3. Parse redirect callback and exchange auth code ────────────────────────
+
+async function completeOAuthFlow(callbackUrl: string) {
+  const callback = parseOAuthCallback(callbackUrl);
+
+  if (!callback.code) {
+    throw new Error("No authorization code found in callback URL");
+  }
+
+  const tokenSet = await exchangeCodeForToken({
+    code: callback.code,
+    clientId: "1000.YOUR_CLIENT_ID",
+    clientSecret: "your_client_secret",
+    redirectUri: "https://yourapp.example.com/oauth/callback",
+    edition: Edition.IN,
+  });
+
+  console.log("Access token:", tokenSet.accessToken);
+  console.log("Refresh token:", tokenSet.refreshToken);
+  console.log("Expires in (s):", tokenSet.expiresIn);
+
+  return tokenSet;
+}
+
+// ── 4. Refresh an access token ────────────────────────────────────────────────
 
 async function refreshToken() {
   const fresh = await ZohoPayments.generateAccessToken({
@@ -61,7 +87,18 @@ async function refreshToken() {
   client.updateOAuthToken(fresh);
 }
 
-// ── 4. Create a payment link ──────────────────────────────────────────────────
+// ── 5. Revoke a refresh token ────────────────────────────────────────────────
+
+async function revokeRefreshToken() {
+  await ZohoPayments.revokeToken({
+    token: "1000.your_refresh_token",
+    edition: Edition.IN,
+  });
+
+  console.log("Refresh token revoked");
+}
+
+// ── 6. Create a payment link ──────────────────────────────────────────────────
 
 async function createPaymentLink() {
   const link = await client.paymentLinks().create({
@@ -78,7 +115,7 @@ async function createPaymentLink() {
   return link;
 }
 
-// ── 5. Create a payment session ───────────────────────────────────────────────
+// ── 7. Create a payment session ───────────────────────────────────────────────
 
 async function createPaymentSession() {
   const session = await client.paymentSessions().create({
@@ -94,7 +131,7 @@ async function createPaymentSession() {
   return session;
 }
 
-// ── 6. Verify a payment ───────────────────────────────────────────────────────
+// ── 8. Verify a payment ───────────────────────────────────────────────────────
 
 async function verifyPayment(paymentId: string) {
   const payment = await client.payments().verify(paymentId);
@@ -103,7 +140,7 @@ async function verifyPayment(paymentId: string) {
   return payment;
 }
 
-// ── 7. Create a customer ──────────────────────────────────────────────────────
+// ── 9. Create a customer ──────────────────────────────────────────────────────
 
 async function createCustomer() {
   const customer = await client.customers().create({
@@ -116,7 +153,7 @@ async function createCustomer() {
   return customer;
 }
 
-// ── 8. Create a refund ────────────────────────────────────────────────────────
+// ── 10. Create a refund ───────────────────────────────────────────────────────
 
 async function createRefund(paymentId: string) {
   const refund = await client.refunds().create(paymentId, {
@@ -130,7 +167,7 @@ async function createRefund(paymentId: string) {
   return refund;
 }
 
-// ── 9. Error handling ─────────────────────────────────────────────────────────
+// ── 11. Error handling ────────────────────────────────────────────────────────
 
 async function withErrorHandling() {
   try {
@@ -148,7 +185,7 @@ async function withErrorHandling() {
   }
 }
 
-// ── 10. Custom HTTP transport ─────────────────────────────────────────────────
+// ── 12. Custom HTTP transport ─────────────────────────────────────────────────
 
 import type { HttpTransport, ZohoRequest, ZohoResponse } from "../src/index.js";
 

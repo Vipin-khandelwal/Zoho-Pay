@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZohoPay SDK Playground</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #121a30;
+        --panel-2: #18233f;
+        --text: #e8ecf8;
+        --muted: #9aa6c7;
+        --accent: #6ea8fe;
+        --accent-2: #8b5cf6;
+        --success: #10b981;
+        --danger: #ef4444;
+        --border: rgba(255,255,255,0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(180deg, #09101d 0%, #0d1426 100%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      h1, h2, h3 { margin: 0 0 12px; }
+      p { color: var(--muted); }
+      .hero {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+      }
+      .panel {
+        background: rgba(18, 26, 48, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        overflow: hidden;
+      }
+      .panel-head {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+      }
+      .panel-body { padding: 18px; }
+      .stack { display: grid; gap: 12px; }
+      .row { display: grid; gap: 8px; }
+      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      label { font-size: 13px; color: var(--muted); }
+      input, select, textarea {
+        width: 100%;
+        background: var(--panel-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font: inherit;
+      }
+      textarea { min-height: 110px; resize: vertical; }
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        color: white;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      }
+      button.secondary { background: #243252; }
+      button.success { background: linear-gradient(135deg, #059669, #10b981); }
+      button.danger { background: linear-gradient(135deg, #dc2626, #ef4444); }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+      .endpoint-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      .endpoint {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        background: rgba(255,255,255,0.02);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: rgba(110,168,254,0.12);
+        color: #b9d3ff;
+        border: 1px solid rgba(110,168,254,0.2);
+      }
+      pre {
+        margin: 0;
+        padding: 16px;
+        min-height: 320px;
+        overflow: auto;
+        background: #08101f;
+        color: #dbe7ff;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .hint { font-size: 12px; color: var(--muted); }
+      .ok { color: #7ef0c5; }
+      .err { color: #ff9a9a; }
+      a { color: #9cc2ff; }
+      @media (max-width: 980px) {
+        .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <span class="pill">Zoho Payments SDK Playground</span>
+        <h1>Test auth, payment tokens, and payment verification</h1>
+        <p>
+          Use this page with a local static server. The SDK is loaded from <code>../dist/index.mjs</code>.
+          For OAuth flows, use your real Zoho credentials and redirect URI.
+        </p>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head"><h2>Client setup</h2></div>
+          <div class="panel-body stack">
+            <div class="split">
+              <div class="row">
+                <label for="edition">Edition</label>
+                <select id="edition">
+                  <option value="IN">IN</option>
+                  <option value="IN_SANDBOX">IN_SANDBOX</option>
+                  <option value="US">US</option>
+                </select>
+              </div>
+              <div class="row">
+                <label for="accountId">Account ID</label>
+                <input id="accountId" placeholder="23137556" />
+              </div>
+            </div>
+
+            <div class="row">
+              <label for="accessToken">Access token</label>
+              <textarea id="accessToken" placeholder="1000.xxxx.yyyy"></textarea>
+            </div>
+
+            <div class="split">
+              <div class="row">
+                <label for="clientId">Client ID</label>
+                <input id="clientId" placeholder="1000.YOUR_CLIENT_ID" />
+              </div>
+              <div class="row">
+                <label for="clientSecret">Client Secret</label>
+                <input id="clientSecret" placeholder="your_client_secret" />
+              </div>
+            </div>
+
+            <div class="split">
+              <div class="row">
+                <label for="refreshToken">Refresh token</label>
+                <input id="refreshToken" placeholder="1000.refresh_token" />
+              </div>
+              <div class="row">
+                <label for="redirectUri">Redirect URI</label>
+                <input id="redirectUri" placeholder="https://yourapp.example.com/oauth/callback" />
+              </div>
+            </div>
+
+            <div class="row">
+              <label for="callbackUrl">OAuth callback URL</label>
+              <textarea id="callbackUrl" placeholder="https://yourapp.example.com/oauth/callback?code=1000.xxx&state=my-state"></textarea>
+            </div>
+
+            <div class="actions">
+              <button id="buildClient">Build client</button>
+              <button id="buildAuthUrl" class="secondary">Build auth URL</button>
+              <button id="parseCallback" class="secondary">Parse callback</button>
+              <button id="exchangeCode" class="secondary">Exchange code</button>
+              <button id="refreshAccessToken" class="success">Refresh token</button>
+              <button id="revokeRefreshToken" class="danger">Revoke token</button>
+            </div>
+            <div class="hint">Auth URL uses payments/customer/refund scopes by default. Paste the full redirect URL to parse and exchange the auth code.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Output</h2></div>
+          <pre id="output">Playground ready.</pre>
+        </section>
+      </div>
+
+      <div style="height:20px"></div>
+
+      <section class="panel">
+        <div class="panel-head"><h2>SDK operations</h2></div>
+        <div class="panel-body endpoint-grid">
+          <div class="endpoint stack">
+            <h3>Create payment link</h3>
+            <input id="plAmount" placeholder="Amount" value="500" />
+            <input id="plCurrency" placeholder="Currency" value="INR" />
+            <input id="plDescription" placeholder="Description" value="Order #1234" />
+            <input id="plEmail" placeholder="Email" value="customer@example.com" />
+            <button id="createPaymentLink">Create payment link</button>
+          </div>
+
+          <div class="endpoint stack">
+            <h3>Create payment session</h3>
+            <input id="psAmount" placeholder="Amount" value="250" />
+            <input id="psCurrency" placeholder="Currency" value="INR" />
+            <input id="psDescription" placeholder="Description" value="Checkout session" />
+            <input id="psExpiresIn" placeholder="Expires in" value="600" />
+            <button id="createPaymentSession">Create payment session</button>
+          </div>
+
+          <div class="endpoint stack">
+            <h3>Verify payment</h3>
+            <input id="verifyPaymentId" placeholder="Payment ID" />
+            <button id="verifyPayment">Verify payment</button>
+          </div>
+
+          <div class="endpoint stack">
+            <h3>Create customer</h3>
+            <input id="customerName" placeholder="Customer name" value="Jane Doe" />
+            <input id="customerEmail" placeholder="Email" value="jane@example.com" />
+            <button id="createCustomer">Create customer</button>
+          </div>
+
+          <div class="endpoint stack">
+            <h3>Create refund</h3>
+            <input id="refundPaymentId" placeholder="Payment ID" />
+            <input id="refundAmount" placeholder="Refund amount" value="100" />
+            <input id="refundReason" placeholder="Reason" value="requested_by_customer" />
+            <button id="createRefund">Create refund</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import {
+        ZohoPayments,
+        Edition,
+        buildAuthorizationUrl,
+        OAUTH_SCOPES,
+        parseOAuthCallback,
+        AuthenticationException,
+        InvalidRequestException,
+        ZohoPaymentsAPIException,
+      } from "../dist/index.mjs";
+
+      let client = null;
+      const $ = (id) => document.getElementById(id);
+      const out = $("output");
+
+      function getEdition() {
+        return Edition[$("edition").value];
+      }
+
+      function print(value, isError = false) {
+        const prefix = isError ? "ERROR\n" : "OK\n";
+        out.textContent = prefix + (typeof value === "string" ? value : JSON.stringify(value, null, 2));
+      }
+
+      function requireClient() {
+        if (!client) throw new Error("Build the client first.");
+        return client;
+      }
+
+      function buildClient() {
+        client?.close?.();
+        client = ZohoPayments.builder()
+          .accountId($("accountId").value.trim())
+          .edition(getEdition())
+          .accessToken($("accessToken").value.trim())
+          .build();
+        print({ message: "Client created", edition: $("edition").value, accountId: $("accountId").value.trim() });
+      }
+
+      async function run(name, fn) {
+        try {
+          const result = await fn();
+          print({ action: name, result });
+        } catch (err) {
+          if (err instanceof AuthenticationException) {
+            print({ action: name, type: err.name, message: err.message, hint: "Refresh the access token and retry." }, true);
+          } else if (err instanceof InvalidRequestException || err instanceof ZohoPaymentsAPIException) {
+            print({ action: name, type: err.name, status: err.httpStatusCode, code: err.codeString, message: err.apiErrorMessage ?? err.message }, true);
+          } else {
+            print({ action: name, type: err?.name ?? "Error", message: err?.message ?? String(err) }, true);
+          }
+        }
+      }
+
+      $("buildClient").addEventListener("click", () => run("buildClient", async () => buildClient()));
+
+      $("buildAuthUrl").addEventListener("click", () => run("buildAuthUrl", async () => {
+        return {
+          authUrl: buildAuthorizationUrl({
+            clientId: $("clientId").value.trim(),
+            accountId: $("accountId").value.trim(),
+            scopes: [
+              OAUTH_SCOPES.PAYMENTS_CREATE,
+              OAUTH_SCOPES.PAYMENTS_READ,
+              OAUTH_SCOPES.CUSTOMERS_CREATE,
+              OAUTH_SCOPES.CUSTOMERS_READ,
+              OAUTH_SCOPES.REFUNDS_CREATE,
+              OAUTH_SCOPES.REFUNDS_READ,
+            ],
+            redirectUri: $("redirectUri").value.trim(),
+            edition: getEdition(),
+            accessType: "offline",
+          }),
+        };
+      }));
+
+      $("parseCallback").addEventListener("click", () => run("parseCallback", async () => {
+        return parseOAuthCallback($("callbackUrl").value.trim());
+      }));
+
+      $("exchangeCode").addEventListener("click", () => run("exchangeCode", async () => {
+        const callback = ZohoPayments.parseOAuthCallback($("callbackUrl").value.trim());
+
+        if (!callback.code) {
+          throw new Error("No authorization code found in callback URL.");
+        }
+
+        const tokenSet = await ZohoPayments.exchangeCodeForToken({
+          code: callback.code,
+          clientId: $("clientId").value.trim(),
+          clientSecret: $("clientSecret").value.trim(),
+          redirectUri: $("redirectUri").value.trim(),
+          edition: getEdition(),
+        });
+
+        $("accessToken").value = tokenSet.accessToken;
+        $("refreshToken").value = tokenSet.refreshToken;
+
+        return tokenSet;
+      }));
+
+      $("refreshAccessToken").addEventListener("click", () => run("refreshAccessToken", async () => {
+        const fresh = await ZohoPayments.generateAccessToken({
+          refreshToken: $("refreshToken").value.trim(),
+          clientId: $("clientId").value.trim(),
+          clientSecret: $("clientSecret").value.trim(),
+          redirectUri: $("redirectUri").value.trim(),
+          edition: getEdition(),
+        });
+        $("accessToken").value = fresh.accessToken;
+        if (client) client.updateOAuthToken(fresh);
+        return { accessToken: fresh.accessToken, expiresIn: fresh.expiresIn, expired: fresh.isExpired() };
+      }));
+
+      $("revokeRefreshToken").addEventListener("click", () => run("revokeRefreshToken", async () => {
+        await ZohoPayments.revokeToken({
+          token: $("refreshToken").value.trim(),
+          edition: getEdition(),
+        });
+
+        return { revoked: true, token: $("refreshToken").value.trim() };
+      }));
+
+      $("createPaymentLink").addEventListener("click", () => run("createPaymentLink", async () => {
+        const result = await requireClient().paymentLinks().create({
+          amount: Number($("plAmount").value),
+          currency: $("plCurrency").value.trim(),
+          description: $("plDescription").value.trim(),
+          email: $("plEmail").value.trim(),
+          notifyCustomer: { email: true, sms: false },
+          metaData: [{ key: "source", value: "playground" }],
+        });
+        return result;
+      }));
+
+      $("createPaymentSession").addEventListener("click", () => run("createPaymentSession", async () => {
+        return requireClient().paymentSessions().create({
+          amount: Number($("psAmount").value),
+          currency: $("psCurrency").value.trim(),
+          description: $("psDescription").value.trim(),
+          expiresIn: Number($("psExpiresIn").value),
+        });
+      }));
+
+      $("verifyPayment").addEventListener("click", () => run("verifyPayment", async () => {
+        return requireClient().payments().verify($("verifyPaymentId").value.trim());
+      }));
+
+      $("createCustomer").addEventListener("click", () => run("createCustomer", async () => {
+        return requireClient().customers().create({
+          name: $("customerName").value.trim(),
+          email: $("customerEmail").value.trim(),
+          metaData: [{ key: "source", value: "playground" }],
+        });
+      }));
+
+      $("createRefund").addEventListener("click", () => run("createRefund", async () => {
+        return requireClient().refunds().create($("refundPaymentId").value.trim(), {
+          amount: Number($("refundAmount").value),
+          reason: $("refundReason").value.trim(),
+          type: "partial",
+        });
+      }));
+    </script>
+  </body>
+</html>
