@@ -191,15 +191,21 @@
               <textarea id="callbackUrl" placeholder="https://yourapp.example.com/oauth/callback?code=1000.xxx&state=my-state"></textarea>
             </div>
 
+            <div style="font-size:12px;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px;line-height:1.7">
+              <strong style="color:var(--text)">OAuth flow steps:</strong><br>
+              <span style="color:var(--accent)">①</span> Fill Client ID, Secret, Redirect URI → <strong>Build auth URL</strong> → open the link<br>
+              <span style="color:var(--accent)">②</span> Zoho redirects back → paste the full callback URL → <strong>Exchange code</strong><br>
+              <span style="color:var(--accent)">③</span> Tokens are auto-filled → <strong>Build client</strong> to start making API calls<br>
+              <span style="color:var(--accent)">④</span> When token expires → <strong>Refresh token</strong>
+            </div>
             <div class="actions">
-              <button id="buildClient">Build client</button>
-              <button id="buildAuthUrl" class="secondary">Build auth URL</button>
-              <button id="parseCallback" class="secondary">Parse callback</button>
-              <button id="exchangeCode" class="secondary">Exchange code</button>
-              <button id="refreshAccessToken" class="success">Refresh token</button>
+              <button id="buildAuthUrl">① Build auth URL</button>
+              <button id="exchangeCode" class="secondary">② Exchange code</button>
+              <button id="buildClient" class="success">③ Build client</button>
+              <button id="refreshAccessToken" class="secondary">④ Refresh token</button>
               <button id="revokeRefreshToken" class="danger">Revoke token</button>
             </div>
-            <div class="hint">Auth URL uses payments/customer/refund scopes by default. For <code>IN_SANDBOX</code>, scope prefixes are rewritten automatically and <code>soid</code> becomes <code>zohopaysandbox.{account_id}</code>. Paste the full redirect URL to parse and exchange the auth code.</div>
+            <div class="hint">For <code>IN_SANDBOX</code>, scope prefixes are rewritten automatically and <code>soid</code> becomes <code>zohopaysandbox.{account_id}</code>.</div>
           </div>
         </section>
 
@@ -311,13 +317,18 @@
         }
       }
 
-      $("buildClient").addEventListener("click", () => run("buildClient", async () => buildClient()));
+      $("buildAuthUrl").addEventListener("click", () => {
+        try {
+          const clientId = $("clientId").value.trim();
+          const accountId = $("accountId").value.trim();
+          const redirectUri = $("redirectUri").value.trim();
+          if (!clientId) throw new Error("Client ID is required.");
+          if (!accountId) throw new Error("Account ID is required.");
+          if (!redirectUri) throw new Error("Redirect URI is required.");
 
-      $("buildAuthUrl").addEventListener("click", () => run("buildAuthUrl", async () => {
-        return {
-          authUrl: buildAuthorizationUrl({
-            clientId: $("clientId").value.trim(),
-            accountId: $("accountId").value.trim(),
+          const authUrl = buildAuthorizationUrl({
+            clientId,
+            accountId,
             scopes: [
               OAUTH_SCOPES.PAYMENTS_CREATE,
               OAUTH_SCOPES.PAYMENTS_READ,
@@ -326,23 +337,28 @@
               OAUTH_SCOPES.REFUNDS_CREATE,
               OAUTH_SCOPES.REFUNDS_READ,
             ],
-            redirectUri: $("redirectUri").value.trim(),
+            redirectUri,
             edition: getEdition(),
             accessType: "offline",
-          }),
-        };
-      }));
+          });
 
-      $("parseCallback").addEventListener("click", () => run("parseCallback", async () => {
-        return parseOAuthCallback($("callbackUrl").value.trim());
-      }));
+          out.innerHTML =
+            "<span class='ok'>OK</span>\n\n" +
+            "<strong>&#9312; Open this URL in your browser to authorize:</strong>\n\n" +
+            "<a href='" + authUrl + "' target='_blank' rel='noopener noreferrer' style='word-break:break-all;color:#9cc2ff'>" + authUrl + "</a>\n\n" +
+            "After authorizing, Zoho will redirect to your Redirect URI with <code>?code=...</code> in the URL.\n" +
+            "Paste that full callback URL into the <strong>OAuth callback URL</strong> field above, then click <strong>&#9313; Exchange code</strong>.";
+        } catch (err) {
+          print({ action: "buildAuthUrl", type: err?.name ?? "Error", message: err?.message ?? String(err) }, true);
+        }
+      });
 
       $("exchangeCode").addEventListener("click", () => run("exchangeCode", async () => {
-        const callback = ZohoPayments.parseOAuthCallback($("callbackUrl").value.trim());
+        const callbackUrl = $("callbackUrl").value.trim();
+        if (!callbackUrl) throw new Error("Paste the full callback URL (with ?code=...) into the OAuth callback URL field.");
 
-        if (!callback.code) {
-          throw new Error("No authorization code found in callback URL.");
-        }
+        const callback = parseOAuthCallback(callbackUrl);
+        if (!callback.code) throw new Error("No authorization code found in the callback URL. Make sure you pasted the full redirect URL including the query string.");
 
         const tokenSet = await ZohoPayments.exchangeCodeForToken({
           code: callback.code,
@@ -353,10 +369,17 @@
         });
 
         $("accessToken").value = tokenSet.accessToken;
-        $("refreshToken").value = tokenSet.refreshToken;
+        if (tokenSet.refreshToken) $("refreshToken").value = tokenSet.refreshToken;
 
-        return tokenSet;
+        return {
+          accessToken: tokenSet.accessToken,
+          refreshToken: tokenSet.refreshToken ?? "(not returned — access_type was online)",
+          expiresIn: tokenSet.expiresIn,
+          hint: "Tokens auto-filled above. Click ③ Build client to start making API calls.",
+        };
       }));
+
+      $("buildClient").addEventListener("click", () => run("buildClient", async () => buildClient()));
 
       $("refreshAccessToken").addEventListener("click", () => run("refreshAccessToken", async () => {
         const fresh = await ZohoPayments.generateAccessToken({
@@ -376,7 +399,6 @@
           token: $("refreshToken").value.trim(),
           edition: getEdition(),
         });
-
         return { revoked: true, token: $("refreshToken").value.trim() };
       }));
 

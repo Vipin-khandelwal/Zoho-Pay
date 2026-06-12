@@ -20,7 +20,8 @@ export interface ExchangeCodeForTokenParams {
 
 export interface ExchangeCodeForTokenResult {
   accessToken: string;
-  refreshToken: string;
+  /** Only present when `access_type` was `"offline"`. */
+  refreshToken: string | undefined;
   expiresIn: number;
 }
 
@@ -84,13 +85,9 @@ export function buildAuthorizationUrl(
 /**
  * Exchanges an authorization code for access + refresh tokens (Step 3).
  */
-export async function exchangeCodeForToken(params: {
-  code: string;
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-  edition: Edition;
-}): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+export async function exchangeCodeForToken(
+  params: ExchangeCodeForTokenParams
+): Promise<ExchangeCodeForTokenResult> {
   return exchangeCodeForTokenInternal(params);
 }
 
