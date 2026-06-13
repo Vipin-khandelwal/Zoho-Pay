@@ -60,6 +60,8 @@ export abstract class BaseService {
       payment_link: "payment_link_id",
       payments_session: "payments_session_id",
       refund: "refund_id",
+      mandate: "mandate_id",
+      mandate_notification: "mandate_notification_id",
     };
     const idKey = idKeys[key];
     return idKey !== undefined && body[idKey] !== undefined;
@@ -69,6 +71,7 @@ export abstract class BaseService {
     const aliases: Record<string, string[]> = {
       payment_link: ["payment_link", "payment_links"],
       payments_session: ["payments_session", "payment_session", "payments_sessions"],
+      mandate_notification: ["mandate_notification", "mandate_notifications"],
     };
     return aliases[key] ?? [key];
   }

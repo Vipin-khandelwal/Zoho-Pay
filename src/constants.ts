@@ -10,6 +10,8 @@ export const OAUTH_SCOPES = {
   PAYMENTS_CREATE: "ZohoPay.payments.CREATE",
   PAYMENTS_READ: "ZohoPay.payments.READ",
   PAYMENTS_UPDATE: "ZohoPay.payments.UPDATE",
+  MANDATES_CREATE: "ZohoPay.payments.CREATE",
+  MANDATES_READ: "ZohoPay.payments.READ",
   REFUNDS_CREATE: "ZohoPay.refunds.CREATE",
   REFUNDS_READ: "ZohoPay.refunds.READ",
 } as const;

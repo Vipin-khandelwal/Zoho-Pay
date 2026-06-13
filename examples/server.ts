@@ -343,6 +343,134 @@ app.get("/api/refunds", withClient(fromQuery, async (client, _req, res) => {
   res.json(await client.refunds().list());
 }));
 
+// Mandates
+app.post("/api/mandates/enrollment-session", withClient(fromBody, async (client, req, res) => {
+  const {
+    amount,
+    currency,
+    customerId,
+    description,
+    invoiceNumber,
+    maxRetryCount,
+    configurations,
+    mandateDetails,
+    metaData,
+  } = req.body as Record<string, unknown>;
+  if (!mandateDetails || typeof mandateDetails !== "object" || Array.isArray(mandateDetails)) {
+    res.status(400).json({ error: "mandateDetails is required" });
+    return;
+  }
+  res.json(await client.mandates().createEnrollmentSession({
+    amount: Number(amount),
+    currency: String(currency),
+    customerId: String(customerId),
+    description: String(description),
+    mandateDetails: mandateDetails as Parameters<ReturnType<typeof client.mandates>["createEnrollmentSession"]>[0]["mandateDetails"],
+    ...(invoiceNumber !== undefined ? { invoiceNumber: String(invoiceNumber) } : {}),
+    ...(maxRetryCount !== undefined ? { maxRetryCount: Number(maxRetryCount) } : {}),
+    ...(configurations !== undefined && typeof configurations === "object" && !Array.isArray(configurations)
+      ? { configurations: configurations as Parameters<ReturnType<typeof client.mandates>["createEnrollmentSession"]>[0]["configurations"] }
+      : {}),
+    ...(Array.isArray(metaData) ? { metaData: metaData as { key: string; value: string }[] } : {}),
+  }));
+}));
+
+app.post("/api/mandates/execution-session", withClient(fromBody, async (client, req, res) => {
+  const { amount, currency, customerId, description, invoiceNumber, maxRetryCount, metaData } = req.body as Record<string, unknown>;
+  res.json(await client.mandates().createExecutionSession({
+    amount: Number(amount),
+    currency: String(currency),
+    customerId: String(customerId),
+    description: String(description),
+    invoiceNumber: String(invoiceNumber),
+    ...(maxRetryCount !== undefined ? { maxRetryCount: Number(maxRetryCount) } : {}),
+    ...(Array.isArray(metaData) ? { metaData: metaData as { key: string; value: string }[] } : {}),
+  }));
+}));
+
+app.post("/api/mandates/notify", withClient(fromBody, async (client, req, res) => {
+  const { mandateId, amount, executionDate, description, invoiceNumber } = req.body as Record<string, unknown>;
+  res.json(await client.mandates().notify({
+    mandateId: String(mandateId),
+    amount: Number(amount),
+    executionDate: String(executionDate),
+    description: String(description),
+    invoiceNumber: String(invoiceNumber),
+  }));
+}));
+
+app.post("/api/mandates/execute", withClient(fromBody, async (client, req, res) => {
+  const {
+    customerId,
+    mandateId,
+    paymentsSessionId,
+    invoiceNumber,
+    amount,
+    mandateNotificationId,
+    receiptEmail,
+    phone,
+    phoneCountryCode,
+    description,
+    referenceNumber,
+  } = req.body as Record<string, unknown>;
+  res.json(await client.mandates().execute({
+    customerId: String(customerId),
+    mandateId: String(mandateId),
+    paymentsSessionId: String(paymentsSessionId),
+    invoiceNumber: String(invoiceNumber),
+    amount: Number(amount),
+    ...(mandateNotificationId !== undefined ? { mandateNotificationId: String(mandateNotificationId) } : {}),
+    ...(receiptEmail !== undefined ? { receiptEmail: String(receiptEmail) } : {}),
+    ...(phone !== undefined ? { phone: String(phone) } : {}),
+    ...(phoneCountryCode !== undefined ? { phoneCountryCode: String(phoneCountryCode) } : {}),
+    ...(description !== undefined ? { description: String(description) } : {}),
+    ...(referenceNumber !== undefined ? { referenceNumber: String(referenceNumber) } : {}),
+  }));
+}));
+
+app.post("/api/mandates/auto-execute", withClient(fromBody, async (client, req, res) => {
+  const {
+    customerId,
+    mandateId,
+    paymentsSessionId,
+    invoiceNumber,
+    amount,
+    receiptEmail,
+    phone,
+    phoneCountryCode,
+    description,
+    referenceNumber,
+  } = req.body as Record<string, unknown>;
+  res.json(await client.mandates().autoExecute({
+    customerId: String(customerId),
+    mandateId: String(mandateId),
+    paymentsSessionId: String(paymentsSessionId),
+    invoiceNumber: String(invoiceNumber),
+    amount: Number(amount),
+    ...(receiptEmail !== undefined ? { receiptEmail: String(receiptEmail) } : {}),
+    ...(phone !== undefined ? { phone: String(phone) } : {}),
+    ...(phoneCountryCode !== undefined ? { phoneCountryCode: String(phoneCountryCode) } : {}),
+    ...(description !== undefined ? { description: String(description) } : {}),
+    ...(referenceNumber !== undefined ? { referenceNumber: String(referenceNumber) } : {}),
+  }));
+}));
+
+app.get(["/api/mandates", "/api/mandates/"], (_req: Request, res: Response) => {
+  res.status(400).json({ error: "mandateId is required", message: "Use GET /api/mandates/:id to retrieve a mandate." });
+});
+
+app.get(["/api/mandates/notifications", "/api/mandates/notifications/"], (_req: Request, res: Response) => {
+  res.status(400).json({ error: "mandateNotificationId is required", message: "Use GET /api/mandates/notifications/:id to retrieve a mandate notification." });
+});
+
+app.get("/api/mandates/notifications/:id", withClient(fromQuery, async (client, req, res) => {
+  res.json(await client.mandates().getNotification(routeId(req)));
+}));
+
+app.get("/api/mandates/:id", withClient(fromQuery, async (client, req, res) => {
+  res.json(await client.mandates().get(routeId(req)));
+}));
+
 // ── Error handler ─────────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

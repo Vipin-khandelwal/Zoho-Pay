@@ -9,6 +9,7 @@ import { PaymentSessionService } from "./services/PaymentSessionService.js";
 import { PaymentService } from "./services/PaymentService.js";
 import { CustomerService } from "./services/CustomerService.js";
 import { RefundService } from "./services/RefundService.js";
+import { MandateService } from "./services/MandateService.js";
 import { DEFAULT_REQUEST_TIMEOUT_MS } from "./constants.js";
 
 export interface ZohoPaymentsClientOptions {
@@ -37,6 +38,7 @@ export class ZohoPaymentsClient {
   private readonly _payments: PaymentService;
   private readonly _customers: CustomerService;
   private readonly _refunds: RefundService;
+  private readonly _mandates: MandateService;
 
   private _closed = false;
 
@@ -77,6 +79,7 @@ export class ZohoPaymentsClient {
     this._payments = new PaymentService(this._http, options.edition);
     this._customers = new CustomerService(this._http, options.edition);
     this._refunds = new RefundService(this._http);
+    this._mandates = new MandateService(this._http);
   }
 
   paymentLinks(): PaymentLinkService {
@@ -97,6 +100,10 @@ export class ZohoPaymentsClient {
 
   refunds(): RefundService {
     return this._refunds;
+  }
+
+  mandates(): MandateService {
+    return this._mandates;
   }
 
   /** Replace the stored OAuth access token. */

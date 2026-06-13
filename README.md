@@ -12,6 +12,7 @@ TypeScript SDK for the [Zoho Payments API](https://www.zoho.com/payments/). Supp
 - Payments — create (US), get, list, verify
 - Customers — create, get, list (US), delete (US)
 - Refunds — create, get, list
+- Mandates / UPI Autopay — enroll, notify, execute, auto-execute, retrieve
 - Pluggable HTTP transport — inject retries, proxies, or logging
 - Strict TypeScript types, zero runtime dependencies
 
@@ -211,6 +212,82 @@ const refund = await client.refunds().get("refund_id");
 
 // List
 const { items } = await client.refunds().list({ page: 1 });
+```
+
+## Mandates / UPI Autopay
+
+```ts
+// 1. Create a mandate enrollment session, then open hosted checkout with accessKey.
+const enrollment = await client.mandates().createEnrollmentSession({
+  amount: 100,
+  currency: "INR",
+  customerId: "customer_id",
+  description: "Payment session for mandate enrollment",
+  invoiceNumber: "INV-12345",
+  maxRetryCount: 2,
+  configurations: {
+    hostedCheckoutParameters: {
+      phoneCountryCode: "IN",
+      phone: "9876543210",
+      name: "Charles",
+      email: "customer@example.com",
+      successUrl: "https://example.com/success",
+      failureUrl: "https://example.com/failure",
+    },
+  },
+  mandateDetails: {
+    paymentMethodType: "upi",
+    frequency: "monthly",
+    description: "Monthly subscription autopay",
+    amountRule: "variable",
+    maxAmount: 2000,
+    startDate: "22-07-2026",
+    endDate: "30-11-2026",
+    debitDay: 2,
+    debitRule: "on",
+  },
+});
+
+console.log(enrollment.paymentsSessionId, enrollment.accessKey);
+
+// 2A. Manual notification flow: notify at least 24 hours before execution.
+const notification = await client.mandates().notify({
+  mandateId: "mandate_id",
+  amount: 100,
+  executionDate: "23-07-2026",
+  description: "Testing Mandate Execution",
+  invoiceNumber: "INV12345",
+});
+
+const executionSession = await client.mandates().createExecutionSession({
+  amount: 100,
+  currency: "INR",
+  customerId: "customer_id",
+  description: "Payment session for mandate execution",
+  invoiceNumber: "INV12345",
+});
+
+const payment = await client.mandates().execute({
+  customerId: "customer_id",
+  mandateId: "mandate_id",
+  paymentsSessionId: executionSession.paymentsSessionId!,
+  mandateNotificationId: notification.mandateNotificationId,
+  invoiceNumber: "INV12345",
+  amount: 100,
+});
+
+// 2B. Auto-execution flow: omit mandateNotificationId. Zoho sends the
+// notification immediately and processes the debit automatically after 24 hours.
+const autoPayment = await client.mandates().autoExecute({
+  customerId: "customer_id",
+  mandateId: "mandate_id",
+  paymentsSessionId: executionSession.paymentsSessionId!,
+  invoiceNumber: "INV12346",
+  amount: 100,
+});
+
+const mandate = await client.mandates().get("mandate_id");
+const fetchedNotification = await client.mandates().getNotification("mandate_notification_id");
 ```
 
 ## Error handling

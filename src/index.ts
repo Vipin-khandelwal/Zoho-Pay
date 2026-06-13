@@ -53,6 +53,7 @@ export type {
 } from "./models/common.js";
 export type { PaymentLink, PaymentLinkPayment } from "./models/payment-link.js";
 export type { PaymentSession, PaymentSessionPayment } from "./models/payment-session.js";
+export type { Mandate, MandateNotification } from "./models/mandate.js";
 export type {
   Payment,
   PaymentSummary,
@@ -80,6 +81,18 @@ export type {
   PaymentLinkConfigurationsParams,
 } from "./params/payment-link.js";
 export type { PaymentSessionCreateParams } from "./params/payment-session.js";
+export type {
+  MandateAmountRule,
+  MandateAutoExecuteParams,
+  MandateDebitRule,
+  MandateDetailsParams,
+  MandateEnrollmentSessionParams,
+  MandateExecutionSessionParams,
+  MandateExecuteParams,
+  MandateFrequency,
+  MandateNotifyParams,
+  MandatePaymentMethodType,
+} from "./params/mandate.js";
 export type { PaymentCreateParams, PaymentListParams, BrowserInfo } from "./params/payment.js";
 export type { CustomerCreateParams, CustomerListParams } from "./params/customer.js";
 export type { RefundCreateParams } from "./params/refund.js";
@@ -87,6 +100,7 @@ export type { RefundCreateParams } from "./params/refund.js";
 // ── Services ──────────────────────────────────────────────────────────────────
 export { PaymentLinkService } from "./services/PaymentLinkService.js";
 export { PaymentSessionService } from "./services/PaymentSessionService.js";
+export { MandateService } from "./services/MandateService.js";
 export { PaymentService } from "./services/PaymentService.js";
 export { CustomerService } from "./services/CustomerService.js";
 export { RefundService } from "./services/RefundService.js";

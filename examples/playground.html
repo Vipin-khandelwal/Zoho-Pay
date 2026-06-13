@@ -270,6 +270,61 @@
           </div>
         </div>
 
+        <div class="op">
+          <h3>Mandates</h3>
+          <p>UPI Autopay: enroll once, then collect recurring payments by manual notification or auto-execution.</p>
+          <div class="row"><label>Customer ID</label><input id="mandCustomerId" placeholder="customer_id" /></div>
+          <div class="split2">
+            <div class="row"><label>Amount</label><input id="mandAmount" value="100" /></div>
+            <div class="row"><label>Currency</label><input id="mandCurrency" value="INR" /></div>
+          </div>
+          <div class="row"><label>Description</label><input id="mandDesc" value="Testing Mandate Creation" /></div>
+          <div class="split2">
+            <div class="row">
+              <label>Frequency</label>
+              <select id="mandFrequency">
+                <option value="daily">daily</option>
+                <option value="weekly" selected>weekly</option>
+                <option value="monthly">monthly</option>
+                <option value="quarterly">quarterly</option>
+                <option value="half_yearly">half_yearly</option>
+                <option value="yearly">yearly</option>
+              </select>
+            </div>
+            <div class="row">
+              <label>Amount rule</label>
+              <select id="mandAmountRule">
+                <option value="variable" selected>variable</option>
+                <option value="fixed">fixed</option>
+              </select>
+            </div>
+          </div>
+          <div class="split2">
+            <div class="row"><label>Start date (dd-mm-yyyy)</label><input id="mandStart" value="22-07-2026" /></div>
+            <div class="row"><label>End date (dd-mm-yyyy)</label><input id="mandEnd" value="30-11-2026" /></div>
+          </div>
+          <div class="split2">
+            <div class="row"><label>Execution date (T+1 to T+3)</label><input id="mandExecDate" value="23-07-2026" /></div>
+            <div class="row"><label>Max amount</label><input id="mandMaxAmount" value="2000" /></div>
+          </div>
+          <div class="actions">
+            <button id="btnMandEnroll">Create enrollment</button>
+            <button id="btnMandOpen" class="sec">Open checkout</button>
+          </div>
+          <div class="sep"></div>
+          <div class="row"><label>Mandate ID</label><input id="mandId" placeholder="mandate_id" /></div>
+          <div class="row"><label>Mandate notification ID</label><input id="mandNotifId" placeholder="mandate_notification_id" /></div>
+          <div class="row"><label>Execution payment session ID</label><input id="mandExecSessionId" placeholder="payments_session_id" /></div>
+          <div class="actions">
+            <button id="btnMandGet" class="sec">Get mandate</button>
+            <button id="btnMandNotify" class="sec">Notify</button>
+            <button id="btnMandGetNotif" class="sec">Get notification</button>
+            <button id="btnMandExecSession" class="sec">Create exec session</button>
+            <button id="btnMandExecute">Execute</button>
+            <button id="btnMandAutoExecute" class="ok">Auto-execute</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -355,6 +410,11 @@
     if (accessKey) return "https://payments.zoho.in/hostedcheckout/" + encodeURIComponent(accessKey);
 
     return undefined;
+  }
+
+  function hostedCheckoutUrl(accessKey) {
+    if (!accessKey) return "";
+    return "https://payments.zoho.in/hostedcheckout/" + encodeURIComponent(accessKey);
   }
 
   function latestPaymentFromList(result) {
@@ -560,6 +620,124 @@
   }));
   $("btnGetRef").addEventListener("click",  () => run("Get refund",   () => api("GET", "/api/refunds/" + val("refId"), creds())));
   $("btnListRef").addEventListener("click", () => run("List refunds", () => api("GET", "/api/refunds",                 creds())));
+
+  // ── Mandates ────────────────────────────────────────────────────────────────
+  let lastMandateCheckoutUrl = "";
+
+  $("btnMandEnroll").addEventListener("click", () => run("Create mandate enrollment session", async () => {
+    const description = val("mandDesc");
+    const session = await api("POST", "/api/mandates/enrollment-session", {
+      ...creds(),
+      amount: Number(val("mandAmount")),
+      currency: val("mandCurrency"),
+      customerId: val("mandCustomerId"),
+      description: "Payment session for mandate enrollment",
+      invoiceNumber: "INV-" + Date.now(),
+      maxRetryCount: 2,
+      configurations: {
+        hostedCheckoutParameters: {
+          phoneCountryCode: "IN",
+          phone: val("flowPhone") || "9876543210",
+          name: val("flowName") || "Charles",
+          email: val("flowEmail") || "xxx@abc.com",
+          description,
+          successUrl: "https://maxcode.in/?mandate=success",
+          failureUrl: "https://maxcode.in/?mandate=failure",
+        },
+      },
+      mandateDetails: {
+        paymentMethodType: "upi",
+        frequency: val("mandFrequency"),
+        description,
+        amountRule: val("mandAmountRule"),
+        maxAmount: val("mandAmountRule") === "variable" ? Number(val("mandMaxAmount")) : undefined,
+        amount: val("mandAmountRule") === "fixed" ? Number(val("mandAmount")) : undefined,
+        startDate: val("mandStart"),
+        endDate: val("mandEnd"),
+        debitDay: 2,
+        debitRule: "on",
+      },
+      metaData: [{ key: "source", value: "playground" }],
+    });
+    const accessKey = getPaymentSessionAccessKey(session);
+    lastMandateCheckoutUrl = getCheckoutUrl(session) || hostedCheckoutUrl(accessKey);
+    if (session.paymentsSessionId) $("psId").value = session.paymentsSessionId;
+    return { ...session, checkoutUrl: lastMandateCheckoutUrl || undefined };
+  }));
+
+  $("btnMandOpen").addEventListener("click", () => run("Open mandate checkout", async () => {
+    if (!lastMandateCheckoutUrl) throw new Error("Create an enrollment session first.");
+    window.open(lastMandateCheckoutUrl, "_blank", "noopener");
+    return { opened: lastMandateCheckoutUrl, hint: "Complete mandate enrollment, then use Get mandate after you have the mandate_id." };
+  }));
+
+  $("btnMandGet").addEventListener("click", () => run("Get mandate", () => {
+    if (!val("mandId")) throw new Error("mandate_id is required.");
+    return api("GET", "/api/mandates/" + encodeURIComponent(val("mandId")), creds());
+  }));
+
+  $("btnMandNotify").addEventListener("click", () => run("Send mandate notification", async () => {
+    const result = await api("POST", "/api/mandates/notify", {
+      ...creds(),
+      mandateId: val("mandId"),
+      amount: Number(val("mandAmount")),
+      executionDate: val("mandExecDate"),
+      description: "Testing Mandate Execution",
+      invoiceNumber: "INV" + Date.now(),
+    });
+    if (result.mandateNotificationId) $("mandNotifId").value = result.mandateNotificationId;
+    return result;
+  }));
+
+  $("btnMandGetNotif").addEventListener("click", () => run("Get mandate notification", () => {
+    if (!val("mandNotifId")) throw new Error("mandate_notification_id is required.");
+    return api("GET", "/api/mandates/notifications/" + encodeURIComponent(val("mandNotifId")), creds());
+  }));
+
+  $("btnMandExecSession").addEventListener("click", () => run("Create mandate execution session", async () => {
+    const session = await api("POST", "/api/mandates/execution-session", {
+      ...creds(),
+      amount: Number(val("mandAmount")),
+      currency: val("mandCurrency"),
+      customerId: val("mandCustomerId"),
+      description: "Payment session for mandate execution",
+      invoiceNumber: "INV" + Date.now(),
+      maxRetryCount: 2,
+      metaData: [{ key: "source", value: "playground" }],
+    });
+    if (session.paymentsSessionId) $("mandExecSessionId").value = session.paymentsSessionId;
+    return session;
+  }));
+
+  $("btnMandExecute").addEventListener("click", () => run("Execute mandate", () => api("POST", "/api/mandates/execute", {
+    ...creds(),
+    customerId: val("mandCustomerId"),
+    mandateId: val("mandId"),
+    paymentsSessionId: val("mandExecSessionId"),
+    mandateNotificationId: val("mandNotifId") || undefined,
+    invoiceNumber: "INV" + Date.now(),
+    amount: Number(val("mandAmount")),
+    receiptEmail: val("flowEmail") || undefined,
+    phone: val("flowPhone") || undefined,
+    phoneCountryCode: "IN",
+    description: "Testing Mandate Execution",
+    referenceNumber: "REF" + Date.now(),
+  })));
+
+  $("btnMandAutoExecute").addEventListener("click", () => run("Auto-execute mandate", () => api("POST", "/api/mandates/auto-execute", {
+    ...creds(),
+    customerId: val("mandCustomerId"),
+    mandateId: val("mandId"),
+    paymentsSessionId: val("mandExecSessionId"),
+    invoiceNumber: "INV" + Date.now(),
+    amount: Number(val("mandAmount")),
+    receiptEmail: val("flowEmail") || undefined,
+    phone: val("flowPhone") || undefined,
+    phoneCountryCode: "IN",
+    description: "Testing Mandate Auto Execution",
+    referenceNumber: "AUTO" + Date.now(),
+    hint: "Zoho sends the notification now and auto-debits after 24 hours.",
+  })));
 
   // ── Full payment flow ────────────────────────────────────────────────────────
   $("btnFlowCreate").addEventListener("click", () => run("Full flow: create payment session", async () => {
