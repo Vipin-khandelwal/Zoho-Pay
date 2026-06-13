@@ -13,12 +13,12 @@ export class PaymentSessionService extends BaseService {
 
   async create(params: PaymentSessionCreateParams): Promise<PaymentSession> {
     const body = serializePaymentSessionCreate(params);
-    const res = await this._http.post("/paymentssessions", body);
+    const res = await this._http.post("/paymentsessions", body);
     return this._unwrap(res.body, "payments_session", paymentSessionFromDict);
   }
 
   async get(sessionId: string): Promise<PaymentSession> {
-    const res = await this._http.get(`/paymentssessions/${encodeURIComponent(sessionId)}`);
+    const res = await this._http.get(`/paymentsessions/${encodeURIComponent(sessionId)}`);
     return this._unwrap(res.body, "payments_session", paymentSessionFromDict);
   }
 }

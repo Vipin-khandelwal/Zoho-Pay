@@ -52,9 +52,9 @@ const authUrl = buildAuthorizationUrl({
   edition:     Edition.IN,
   accessType:  "offline",           // "offline" to get a refresh token
   scopes: [
-    OAUTH_SCOPES.PAYMENT_LINKS_CREATE,
-    OAUTH_SCOPES.PAYMENT_LINKS_READ,
+    OAUTH_SCOPES.PAYMENTS_CREATE,
     OAUTH_SCOPES.PAYMENTS_READ,
+    OAUTH_SCOPES.PAYMENTS_UPDATE,
     OAUTH_SCOPES.CUSTOMERS_CREATE,
     OAUTH_SCOPES.CUSTOMERS_READ,
     OAUTH_SCOPES.REFUNDS_CREATE,
@@ -201,7 +201,7 @@ await client.customers().delete("cust_id");
 const refund = await client.refunds().create("payment_id", {
   amount: 100,
   reason: "requested_by_customer",
-  type:   "partial",   // "partial" | "full"
+  type:   "initiated_by_merchant",
 });
 
 // Get

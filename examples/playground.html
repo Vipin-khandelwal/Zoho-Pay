@@ -29,6 +29,7 @@
       border: 1px solid var(--border); border-radius: 10px;
       padding: 9px 12px; font: inherit; font-size: 13px;
     }
+    input[type="checkbox"] { width: auto; accent-color: var(--accent); }
     textarea { min-height: 68px; resize: vertical; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
     .row { display: grid; gap: 4px; }
@@ -58,6 +59,11 @@
     /* ops */
     .ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
     .op { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: rgba(255,255,255,.02); display: grid; gap: 8px; }
+    .checkout-flow { display: grid; gap: 12px; }
+    .checkout-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .checkout-step { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: rgba(255,255,255,.025); }
+    .checkout-step strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .checkout-step code { color: #b9d3ff; word-break: break-all; }
     /* flow guide */
     .flow-guide { border-left: 3px solid var(--accent); padding: 8px 12px; font-size: 12px; line-height: 2; color: var(--muted); }
     .flow-guide strong { color: var(--text); }
@@ -158,6 +164,10 @@
             <button id="btnBuildUrl">&#9313; Build auth URL</button>
             <button id="btnExchange" class="sec">&#9315; Exchange code</button>
           </div>
+          <label style="display:flex;align-items:center;gap:8px;margin:2px 0 4px">
+            <input id="sandboxScopes" type="checkbox" />
+            Use sandbox OAuth scopes (<code>ZohoPaySandbox.*</code>)
+          </label>
           <div class="row">
             <label for="callbackUrl">&#9314; Paste full callback URL here</label>
             <textarea id="callbackUrl" placeholder="https://yourapp.com/callback?code=1000.xxx&state=…"></textarea>
@@ -264,6 +274,49 @@
     </div>
   </section>
 
+  <!-- Full payment flow -->
+  <section class="panel" style="margin-top:18px">
+    <div class="panel-head"><h2>Full Payment Flow Test</h2></div>
+    <div class="panel-body checkout-flow">
+      <p>Create a payment session, open Zoho hosted checkout, complete payment in the opened tab, then paste the returned payment ID or click list to verify.</p>
+      <div class="checkout-steps">
+        <div class="checkout-step">
+          <strong>1. Create session</strong>
+          <code id="flowSessionId">No session yet</code>
+        </div>
+        <div class="checkout-step">
+          <strong>2. Checkout access key</strong>
+          <code id="flowAccessKey">No access key yet</code>
+        </div>
+        <div class="checkout-step">
+          <strong>3. Payment status</strong>
+          <code id="flowPaymentStatus">Not verified</code>
+        </div>
+      </div>
+      <div class="split2">
+        <div class="row"><label>Amount</label><input id="flowAmount" value="100.5" /></div>
+        <div class="row"><label>Currency</label><input id="flowCurrency" value="INR" /></div>
+      </div>
+      <div class="split2">
+        <div class="row"><label>Customer name</label><input id="flowName" value="Charles" /></div>
+        <div class="row"><label>Customer email</label><input id="flowEmail" value="xxx@abc.com" /></div>
+      </div>
+      <div class="split2">
+        <div class="row"><label>Phone country code</label><input id="flowPhoneCountry" value="IN" /></div>
+        <div class="row"><label>Phone</label><input id="flowPhone" value="9876543210" /></div>
+      </div>
+      <div class="row"><label>Description</label><input id="flowDesc" value="Payment for Order #12345" /></div>
+      <div class="row"><label>Checkout URL returned by Zoho / fallback URL</label><input id="flowCheckoutUrl" placeholder="Created session URL or hosted checkout URL appears here" /></div>
+      <div class="row"><label>Payment ID to verify</label><input id="flowPaymentId" placeholder="Paste payment_id after checkout, or use latest payment from List payments" /></div>
+      <div class="actions">
+        <button id="btnFlowCreate" class="ok">1. Create session</button>
+        <button id="btnFlowOpen" class="sec">2. Open checkout</button>
+        <button id="btnFlowList" class="sec">3. List latest payments</button>
+        <button id="btnFlowVerify">4. Verify payment</button>
+      </div>
+    </div>
+  </section>
+
 </div>
 <script>
   const $ = id => document.getElementById(id);
@@ -277,6 +330,36 @@
   function print(label, data, isErr) {
     const tag = isErr ? '<span class="err-tag">ERROR</span>' : '<span class="ok-tag">OK</span>';
     out.innerHTML = tag + " \u2014 " + label + "\n\n" + JSON.stringify(data, null, 2);
+  }
+
+  function firstDefined(...values) {
+    return values.find(value => value !== undefined && value !== null && value !== "");
+  }
+
+  function getPaymentSessionId(session) {
+    return firstDefined(session.paymentsSessionId, session.payments_session_id, session.id);
+  }
+
+  function getPaymentSessionAccessKey(session) {
+    return firstDefined(session.accessKey, session.access_key);
+  }
+
+  function getCheckoutUrl(session) {
+    const hosted = firstDefined(session.hostedCheckout, session.hosted_checkout, session.hosted_checkout_url);
+    if (typeof hosted === "string") return hosted;
+    if (hosted && typeof hosted === "object") return firstDefined(hosted.url, hosted.redirect_url, hosted.checkout_url);
+    const url = firstDefined(session.url, session.redirectUrl, session.redirect_url, session.checkoutUrl, session.checkout_url, session.paymentUrl, session.payment_url);
+    if (url) return url;
+
+    const accessKey = getPaymentSessionAccessKey(session);
+    if (accessKey) return "https://payments.zoho.in/hostedcheckout/" + encodeURIComponent(accessKey);
+
+    return undefined;
+  }
+
+  function latestPaymentFromList(result) {
+    const items = Array.isArray(result.items) ? result.items : Array.isArray(result.payments) ? result.payments : [];
+    return items[0];
   }
 
   async function api(method, path, body) {
@@ -310,10 +393,12 @@
   // ── localStorage ─────────────────────────────────────────────────────────────
   const LS_KEY = "zohopay_playground_v2";
   const FIELDS = ["edition","accountId","accessToken","clientId","clientSecret","refreshToken","redirectUri"];
+  const CHECKBOX_FIELDS = ["sandboxScopes"];
 
   function saveData() {
     const d = {};
     FIELDS.forEach(id => { d[id] = val(id); });
+    CHECKBOX_FIELDS.forEach(id => { d[id] = $(id).checked; });
     localStorage.setItem(LS_KEY, JSON.stringify(d));
     $("saveStatus").textContent = "Saved \u2713";
     setTimeout(() => { $("saveStatus").textContent = ""; }, 2000);
@@ -323,12 +408,14 @@
     try {
       const d = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
       FIELDS.forEach(id => { if (d[id]) $(id).value = d[id]; });
+      CHECKBOX_FIELDS.forEach(id => { if (typeof d[id] === "boolean") $(id).checked = d[id]; });
     } catch {}
   }
 
   function clearData() {
     localStorage.removeItem(LS_KEY);
     [...FIELDS, "callbackUrl"].forEach(id => { $(id).value = ""; });
+    CHECKBOX_FIELDS.forEach(id => { $(id).checked = false; });
     $("saveStatus").textContent = "Cleared";
     setTimeout(() => { $("saveStatus").textContent = ""; }, 2000);
   }
@@ -336,6 +423,10 @@
   $("btnSave").addEventListener("click", saveData);
   $("btnClear").addEventListener("click", clearData);
   loadData();
+
+  $("edition").addEventListener("change", () => {
+    if (val("edition") === "IN_SANDBOX") $("sandboxScopes").checked = true;
+  });
 
   // ── tabs ──────────────────────────────────────────────────────────────────────
   document.querySelectorAll(".tab").forEach(tab => {
@@ -356,6 +447,7 @@
     const data = await api("POST", "/api/auth/url", {
       clientId: val("clientId"), accountId: val("accountId"),
       redirectUri: val("redirectUri"), edition: val("edition"), accessType: "offline",
+      sandboxScopes: $("sandboxScopes").checked,
     });
     out.innerHTML =
       '<span class="ok-tag">OK</span> \u2014 Build auth URL\n\n' +
@@ -406,11 +498,37 @@
 
   // ── Payment Sessions ──────────────────────────────────────────────────────────
   $("btnCreatePS").addEventListener("click", () => run("Create payment session", async () => {
+    const accountId = val("accountId");
     const res = await api("POST", "/api/payment-sessions", {
       ...creds(), amount: Number(val("psAmount")), currency: val("psCurrency"),
       description: val("psDesc"), expiresIn: Number(val("psExpires")),
+      transferDetails: [
+        { connectedAccountId: accountId, amount: 10 },
+        { connectedAccountId: accountId, amount: 20.5 },
+      ],
+      metaData: [{ key: "Key1", value: "Value1" }],
+      invoiceNumber: "INV-12345",
+      referenceNumber: "reference_123",
+      maxRetryCount: 3,
+      configurations: {
+        allowedPaymentMethods: ["upi", "card"],
+        hostedCheckoutParameters: {
+          phoneCountryCode: "IN",
+          phone: "9876543210",
+          name: "Charles",
+          email: "xxx@abc.com",
+          description: val("psDesc"),
+          successUrl: "https://example.com/success",
+          failureUrl: "https://example.com/failure",
+          udf1: "example_udf_1",
+          udf2: "example_udf_2",
+          udf3: "example_udf_3",
+          udf4: "example_udf_4",
+          udf5: "example_udf_5",
+        },
+      },
     });
-    if (res.payments_session_id) $("psId").value = res.payments_session_id;
+    if (res.paymentsSessionId) $("psId").value = res.paymentsSessionId;
     return res;
   }));
   $("btnGetPS").addEventListener("click", () => run("Get payment session", () => api("GET", "/api/payment-sessions/" + val("psId"), creds())));
@@ -433,12 +551,92 @@
   $("btnCreateRef").addEventListener("click", () => run("Create refund", async () => {
     const res = await api("POST", "/api/refunds", {
       ...creds(), paymentId: val("refPayId"), amount: Number(val("refAmount")), reason: val("refReason"),
+      type: "initiated_by_merchant",
+      description: "Refund for Payment",
+      metaData: [{ key: "source", value: "playground" }],
     });
     if (res.refund_id) $("refId").value = res.refund_id;
     return res;
   }));
   $("btnGetRef").addEventListener("click",  () => run("Get refund",   () => api("GET", "/api/refunds/" + val("refId"), creds())));
   $("btnListRef").addEventListener("click", () => run("List refunds", () => api("GET", "/api/refunds",                 creds())));
+
+  // ── Full payment flow ────────────────────────────────────────────────────────
+  $("btnFlowCreate").addEventListener("click", () => run("Full flow: create payment session", async () => {
+    const accountId = val("accountId");
+    const description = val("flowDesc");
+    const session = await api("POST", "/api/payment-sessions", {
+      ...creds(),
+      amount: Number(val("flowAmount")),
+      currency: val("flowCurrency"),
+      description,
+      expiresIn: 900,
+      metaData: [{ key: "flow", value: "playground" }],
+      invoiceNumber: "INV-12345",
+      referenceNumber: "reference_" + Date.now(),
+      maxRetryCount: 3,
+      configurations: {
+        allowedPaymentMethods: ["upi", "card"],
+        hostedCheckoutParameters: {
+          phoneCountryCode: val("flowPhoneCountry"),
+          phone: val("flowPhone"),
+          name: val("flowName"),
+          email: val("flowEmail"),
+          description,
+          successUrl: "https://maxcode.in/?checkout=success",
+          failureUrl: "https://maxcode.in/?checkout=failure",
+          udf1: "zohopay_playground",
+        },
+      },
+    });
+
+    const sessionId = getPaymentSessionId(session);
+    const accessKey = getPaymentSessionAccessKey(session);
+    const checkoutUrl = getCheckoutUrl(session);
+
+    if (sessionId) {
+      $("psId").value = sessionId;
+      $("flowSessionId").textContent = sessionId;
+    }
+    if (accessKey) $("flowAccessKey").textContent = accessKey;
+    if (checkoutUrl) $("flowCheckoutUrl").value = checkoutUrl;
+
+    return {
+      ...session,
+      nextStep: checkoutUrl
+        ? "Click Open checkout, complete payment, then verify."
+        : "No checkout URL was returned. Use the access_key with Zoho's frontend checkout widget if your account requires it.",
+    };
+  }));
+
+  $("btnFlowOpen").addEventListener("click", () => run("Full flow: open checkout", async () => {
+    const checkoutUrl = val("flowCheckoutUrl");
+    if (!checkoutUrl) throw new Error("No checkout URL returned by Zoho. Create a payment session first.");
+    window.open(checkoutUrl, "_blank", "noopener");
+    return { opened: checkoutUrl, nextStep: "Complete payment in the opened tab, then paste payment_id or click List latest payments." };
+  }));
+
+  $("btnFlowList").addEventListener("click", () => run("Full flow: list latest payments", async () => {
+    const result = await api("GET", "/api/payments", creds());
+    const latest = latestPaymentFromList(result);
+    if (latest) {
+      const paymentId = firstDefined(latest.paymentId, latest.payment_id, latest.id);
+      if (paymentId) $("flowPaymentId").value = paymentId;
+      if (latest.status) $("flowPaymentStatus").textContent = latest.status;
+    }
+    return { ...result, hint: latest ? "Latest payment copied into Payment ID field." : "No payments found yet." };
+  }));
+
+  $("btnFlowVerify").addEventListener("click", () => run("Full flow: verify payment", async () => {
+    const paymentId = val("flowPaymentId");
+    if (!paymentId) throw new Error("payment_id is required. Paste it after checkout or click List latest payments.");
+    const payment = await api("GET", "/api/payments/" + paymentId, creds());
+    $("flowPaymentStatus").textContent = payment.status ?? payment.payment_status ?? "unknown";
+    return {
+      ...payment,
+      verified: ["success", "succeeded", "paid", "captured"].includes(String(payment.status ?? "").toLowerCase()),
+    };
+  }));
 </script>
 </body>
 </html>

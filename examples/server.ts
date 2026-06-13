@@ -29,6 +29,8 @@ import {
   ResourceNotFoundException,
   PermissionException,
 } from "../src/index.js";
+import type { ConfigurationsParams } from "../src/params/common.js";
+import type { PaymentSessionTransferDetailParams } from "../src/params/payment-session.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env["PORT"] ?? 3579);
@@ -36,9 +38,23 @@ const PORT = Number(process.env["PORT"] ?? 3579);
 const app = express();
 app.use(express.json());
 
+
+app.use((req, res, next) => {
+  console.log(`\n[${req.method}] ${req.originalUrl}`);
+  console.log("  Body:", req.body);
+  console.log("  Query:", req.query);
+  next();
+});
 // ── Static files ──────────────────────────────────────────────────────────────
 // Serve dist/ for the SDK bundle
 app.use("/dist", express.static(path.join(__dirname, "../dist")));
+
+// ── Playground HTML ───────────────────────────────────────────────────────────
+app.get("/", (_req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, "playground.html"));
+});
+
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function parseEdition(raw: unknown): Edition {
@@ -62,7 +78,12 @@ function apiError(res: Response, err: unknown): void {
   } else if (err instanceof ZohoPaymentsAPIException) {
     res.status(err.httpStatusCode).json({ error: "ZohoPaymentsAPIException", message: err.message, code: err.codeString, apiMessage: err.apiErrorMessage });
   } else if (err instanceof ZohoPaymentsException) {
-    res.status(502).json({ error: "ZohoPaymentsException", message: err.message });
+    const cause = (err as { cause?: unknown }).cause;
+    res.status(502).json({
+      error: "ZohoPaymentsException",
+      message: err.message,
+      ...(cause !== undefined ? { cause } : {}),
+    });
   } else {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: "InternalError", message: msg });
@@ -74,28 +95,27 @@ function apiError(res: Response, err: unknown): void {
 /** POST /api/auth/url — build the authorization URL (no network call) */
 app.post("/api/auth/url", (req: Request, res: Response) => {
   try {
-    const { clientId, accountId, redirectUri, edition, scopes, accessType, state } = req.body as Record<string, unknown>;
+    const { clientId, accountId, redirectUri, edition, scopes, accessType, state, sandboxScopes } = req.body as Record<string, unknown>;
     const ed = parseEdition(edition);
     const scopeList = Array.isArray(scopes) && scopes.length > 0
       ? (scopes as string[])
       : [
-          OAUTH_SCOPES.PAYMENT_LINKS_CREATE,
-          OAUTH_SCOPES.PAYMENT_LINKS_READ,
-          OAUTH_SCOPES.PAYMENT_LINKS_UPDATE,
-          OAUTH_SCOPES.PAYMENT_SESSIONS_CREATE,
-          OAUTH_SCOPES.PAYMENT_SESSIONS_READ,
           OAUTH_SCOPES.PAYMENTS_CREATE,
           OAUTH_SCOPES.PAYMENTS_READ,
+          OAUTH_SCOPES.PAYMENTS_UPDATE,
           OAUTH_SCOPES.CUSTOMERS_CREATE,
           OAUTH_SCOPES.CUSTOMERS_READ,
           OAUTH_SCOPES.REFUNDS_CREATE,
           OAUTH_SCOPES.REFUNDS_READ,
         ];
+    const normalizedScopes = sandboxScopes === true
+      ? scopeList.map((scope) => scope.replace(/^ZohoPay\./, "ZohoPaySandbox."))
+      : scopeList;
 
     const authUrl = buildAuthorizationUrl({
       clientId: String(clientId),
       accountId: String(accountId),
-      scopes: scopeList,
+      scopes: normalizedScopes,
       redirectUri: String(redirectUri),
       edition: ed,
       accessType: accessType === "online" ? "online" : "offline",
@@ -201,6 +221,55 @@ function withClient(
 const fromBody  = (req: Request) => req.body as Record<string, unknown>;
 const fromQuery = (req: Request) => req.query as Record<string, unknown>;
 
+function routeId(req: Request): string {
+  const id = req.params["id"];
+  return Array.isArray(id) ? id[0] ?? "" : id ?? "";
+}
+
+// Payment Sessions
+app.post("/api/payment-sessions", withClient(fromBody, async (client, req, res) => {
+  const {
+    amount,
+    currency,
+    description,
+    expiresIn,
+    transferDetails,
+    metaData,
+    invoiceNumber,
+    referenceNumber,
+    maxRetryCount,
+    configurations,
+  } = req.body as Record<string, unknown>;
+  const result = await client.paymentSessions().create({
+    amount: Number(amount),
+    currency: String(currency),
+    description: String(description),
+    ...(expiresIn !== undefined ? { expiresIn: Number(expiresIn) } : {}),
+    ...(Array.isArray(transferDetails) ? { transferDetails: transferDetails as PaymentSessionTransferDetailParams[] } : {}),
+    ...(Array.isArray(metaData) ? { metaData: metaData as { key: string; value: string }[] } : {}),
+    ...(invoiceNumber !== undefined ? { invoiceNumber: String(invoiceNumber) } : {}),
+    ...(referenceNumber !== undefined ? { referenceNumber: String(referenceNumber) } : {}),
+    ...(maxRetryCount !== undefined ? { maxRetryCount: Number(maxRetryCount) } : {}),
+    ...(configurations !== undefined && typeof configurations === "object" && !Array.isArray(configurations)
+      ? { configurations: configurations as ConfigurationsParams }
+      : {}),
+  });
+  res.json(result);
+}));
+
+app.get("/api/payment-sessions/:id", withClient(fromQuery, async (client, req, res) => {
+  res.json(await client.paymentSessions().get(routeId(req)));
+}));
+
+// Payments
+app.get("/api/payments/:id", withClient(fromQuery, async (client, req, res) => {
+  res.json(await client.payments().get(routeId(req)));
+}));
+
+app.get("/api/payments", withClient(fromQuery, async (client, _req, res) => {
+  res.json(await client.payments().list());
+}));
+
 // Payment Links
 app.post("/api/payment-links", withClient(fromBody, async (client, req, res) => {
   const { amount, currency, description, email, phone, notifyCustomer, metaData } = req.body as Record<string, unknown>;
@@ -217,40 +286,17 @@ app.post("/api/payment-links", withClient(fromBody, async (client, req, res) => 
 }));
 
 app.post("/api/payment-links/:id/cancel", withClient(fromBody, async (client, req, res) => {
-  res.json(await client.paymentLinks().cancel(req.params["id"]!));
+  res.json(await client.paymentLinks().cancel(routeId(req)));
 }));
 
 app.get("/api/payment-links/:id", withClient(fromQuery, async (client, req, res) => {
-  res.json(await client.paymentLinks().get(req.params["id"]!));
+  res.json(await client.paymentLinks().get(routeId(req)));
 }));
 
 app.get("/api/payment-links", withClient(fromQuery, async (client, _req, res) => {
   res.json(await client.paymentLinks().list());
 }));
 
-// Payment Sessions
-app.post("/api/payment-sessions", withClient(fromBody, async (client, req, res) => {
-  const { amount, currency, description, expiresIn } = req.body as Record<string, unknown>;
-  res.json(await client.paymentSessions().create({
-    amount: Number(amount),
-    currency: String(currency),
-    description: String(description),
-    ...(expiresIn !== undefined ? { expiresIn: Number(expiresIn) } : {}),
-  }));
-}));
-
-app.get("/api/payment-sessions/:id", withClient(fromQuery, async (client, req, res) => {
-  res.json(await client.paymentSessions().get(req.params["id"]!));
-}));
-
-// Payments
-app.get("/api/payments/:id", withClient(fromQuery, async (client, req, res) => {
-  res.json(await client.payments().get(req.params["id"]!));
-}));
-
-app.get("/api/payments", withClient(fromQuery, async (client, _req, res) => {
-  res.json(await client.payments().list());
-}));
 
 // Customers
 app.post("/api/customers", withClient(fromBody, async (client, req, res) => {
@@ -264,7 +310,7 @@ app.post("/api/customers", withClient(fromBody, async (client, req, res) => {
 }));
 
 app.get("/api/customers/:id", withClient(fromQuery, async (client, req, res) => {
-  res.json(await client.customers().get(req.params["id"]!));
+  res.json(await client.customers().get(routeId(req)));
 }));
 
 app.get("/api/customers", withClient(fromQuery, async (client, _req, res) => {
@@ -273,20 +319,24 @@ app.get("/api/customers", withClient(fromQuery, async (client, _req, res) => {
 
 // Refunds
 app.post("/api/refunds", withClient(fromBody, async (client, req, res) => {
-  const { paymentId, amount, reason, type } = req.body as Record<string, unknown>;
+  const { paymentId, amount, reason, type, description, metaData } = req.body as Record<string, unknown>;
   if (!paymentId) { res.status(400).json({ error: "paymentId is required" }); return; }
   if (!amount) { res.status(400).json({ error: "amount is required" }); return; }
   if (!reason) { res.status(400).json({ error: "reason is required" }); return; }
-  const refundType = type === "full" ? "full" : "partial";
+  const refundType = type === "initiated_by_customer" || type === "initiated_by_system"
+    ? type
+    : "initiated_by_merchant";
   res.json(await client.refunds().create(String(paymentId), {
     amount: Number(amount),
     reason: String(reason),
     type: refundType,
+    ...(description !== undefined ? { description: String(description) } : {}),
+    ...(Array.isArray(metaData) ? { metaData: metaData as { key: string; value: string }[] } : {}),
   }));
 }));
 
 app.get("/api/refunds/:id", withClient(fromQuery, async (client, req, res) => {
-  res.json(await client.refunds().get(req.params["id"]!));
+  res.json(await client.refunds().get(routeId(req)));
 }));
 
 app.get("/api/refunds", withClient(fromQuery, async (client, _req, res) => {

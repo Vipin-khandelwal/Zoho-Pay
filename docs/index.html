@@ -149,10 +149,11 @@ const authUrl = buildAuthorizationUrl({
   accessType:  "offline",   // "offline" to receive a refresh token
   state:       "csrf-token-here",  // validate on callback to prevent CSRF
   scopes: [
-    OAUTH_SCOPES.PAYMENT_LINKS_CREATE,
-    OAUTH_SCOPES.PAYMENT_LINKS_READ,
+    OAUTH_SCOPES.PAYMENTS_CREATE,
     OAUTH_SCOPES.PAYMENTS_READ,
+    OAUTH_SCOPES.PAYMENTS_UPDATE,
     OAUTH_SCOPES.CUSTOMERS_CREATE,
+    OAUTH_SCOPES.CUSTOMERS_READ,
     OAUTH_SCOPES.REFUNDS_CREATE,
     OAUTH_SCOPES.REFUNDS_READ,
   ],
@@ -291,7 +292,7 @@ await client.customers().delete("cust_id");</pre>
 const refund = await client.refunds().create("payment_id", {
   amount: 100,
   reason: "requested_by_customer",
-  type:   "partial",   // "partial" | "full"
+  type:   "initiated_by_merchant",
 });
 
 // Get

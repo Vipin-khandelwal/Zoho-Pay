@@ -159,7 +159,7 @@ async function createRefund(paymentId: string) {
   const refund = await client.refunds().create(paymentId, {
     amount: 100.0,
     reason: "requested_by_customer",
-    type: "partial",
+    type: "initiated_by_merchant",
   });
 
   console.log("Refund ID:", refund.refundId);

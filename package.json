@@ -16,7 +16,7 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "playground": "tsx examples/server.ts",
-    "playground:dev": "tsx watch examples/server.ts",
+    "playground:dev": "bun --watch run examples/server.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run",

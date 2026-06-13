@@ -93,17 +93,18 @@ export class ZohoHttpClient {
 
   private _buildUrl(path: string, query?: QueryParams): string {
     const config = getEditionConfig(this._edition);
-    const base = `${config.apiBaseUrl}/${this._accountId}${path}`;
-    if (!query) return base;
+    const base = `${config.apiBaseUrl}${path}`;
 
     const params = new URLSearchParams();
+    params.set("account_id", this._accountId);
+    if (!query) return `${base}?${params.toString()}`;
+
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined) {
         params.set(key, String(value));
       }
     }
-    const qs = params.toString();
-    return qs ? `${base}?${qs}` : base;
+    return `${base}?${params.toString()}`;
   }
 
   private _buildHeaders(hasBody: boolean): Record<string, string> {

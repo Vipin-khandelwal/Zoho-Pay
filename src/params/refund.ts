@@ -8,7 +8,8 @@ import {
 export interface RefundCreateParams {
   amount: number;
   reason: string;
-  type: "full" | "partial";
+  type: "initiated_by_merchant" | "initiated_by_customer" | "initiated_by_system";
+  description?: string;
   referenceNumber?: string;
   metaData?: MetaDataParams[];
 }
@@ -24,6 +25,7 @@ export function serializeRefundCreate(p: RefundCreateParams): Record<string, unk
     reason: p.reason,
     type: p.type,
   };
+  if (p.description !== undefined) body["description"] = p.description;
   if (p.referenceNumber !== undefined) body["reference_number"] = p.referenceNumber;
   if (p.metaData !== undefined) body["meta_data"] = serializeMetaData(p.metaData);
   return body;

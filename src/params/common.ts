@@ -11,8 +11,25 @@ export interface NotifyCustomerParams {
 }
 
 export interface ConfigurationsParams {
+  allowedPaymentMethods?: string[];
   paymentMethods?: string[];
   partialPayment?: boolean;
+  hostedCheckoutParameters?: HostedCheckoutParametersParams;
+}
+
+export interface HostedCheckoutParametersParams {
+  phoneCountryCode?: string;
+  phone?: string;
+  name?: string;
+  email?: string;
+  description?: string;
+  successUrl?: string;
+  failureUrl?: string;
+  udf1?: string;
+  udf2?: string;
+  udf3?: string;
+  udf4?: string;
+  udf5?: string;
 }
 
 export interface PaginationParams {
@@ -37,8 +54,29 @@ export function serializeMetaData(items: MetaDataParams[]): Array<{ key: string;
 
 export function serializeConfigurations(c: ConfigurationsParams): Record<string, unknown> {
   const out: Record<string, unknown> = {};
+  if (c.allowedPaymentMethods !== undefined) out["allowed_payment_methods"] = c.allowedPaymentMethods;
   if (c.paymentMethods !== undefined) out["payment_methods"] = c.paymentMethods;
   if (c.partialPayment !== undefined) out["partial_payment"] = c.partialPayment;
+  if (c.hostedCheckoutParameters !== undefined) {
+    out["hosted_checkout_parameters"] = serializeHostedCheckoutParameters(c.hostedCheckoutParameters);
+  }
+  return out;
+}
+
+export function serializeHostedCheckoutParameters(c: HostedCheckoutParametersParams): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (c.phoneCountryCode !== undefined) out["phone_country_code"] = c.phoneCountryCode;
+  if (c.phone !== undefined) out["phone"] = c.phone;
+  if (c.name !== undefined) out["name"] = c.name;
+  if (c.email !== undefined) out["email"] = c.email;
+  if (c.description !== undefined) out["description"] = c.description;
+  if (c.successUrl !== undefined) out["success_url"] = c.successUrl;
+  if (c.failureUrl !== undefined) out["failure_url"] = c.failureUrl;
+  if (c.udf1 !== undefined) out["udf1"] = c.udf1;
+  if (c.udf2 !== undefined) out["udf2"] = c.udf2;
+  if (c.udf3 !== undefined) out["udf3"] = c.udf3;
+  if (c.udf4 !== undefined) out["udf4"] = c.udf4;
+  if (c.udf5 !== undefined) out["udf5"] = c.udf5;
   return out;
 }
 
