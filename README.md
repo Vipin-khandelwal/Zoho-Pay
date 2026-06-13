@@ -2,6 +2,8 @@
 
 TypeScript SDK for the [Zoho Payments API](https://www.zoho.com/payments/). Supports India (production + sandbox) and United States editions.
 
+> **Unofficial SDK / use at your own risk:** This package is community-maintained and is **not** an official Zoho or Zoho Payments SDK. It is provided "as is," without warranties or guarantees. You are solely responsible for validating API behavior, securing credentials, handling customer/payment data, meeting compliance obligations, and managing any data violations, losses, outages, or damages that may arise from using it. The authors and contributors are not responsible or liable in any way for your use of this package.
+
 ## Features
 
 - Full OAuth 2.0 flow — authorization URL, code exchange, token refresh, revoke
@@ -302,4 +304,6 @@ The server binds to `127.0.0.1` only and is not LAN-accessible.
 
 ## License
 
-Apache-2.0
+Apache-2.0. See `LICENSE`.
+
+This package is provided on an "AS IS" and "USE AT YOUR OWN RISK" basis, without warranties or liability. Users are responsible for their own integrations, data handling, compliance, and operational safeguards.
